@@ -34,3 +34,17 @@ INITIAL_REFRESH=false go run ./cmd/server
 - Docker、CI、テスト、引き継ぎ資料
 
 詳細は [HANDOFF.md](HANDOFF.md) と [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) を参照してください。
+
+## GitHub Pagesで安く公開する
+
+常時起動サーバーなしで公開する場合は、静的版を `public/` に書き出します。
+GitHub Actionsが6時間ごとにRSS/Atomを収集し、GitHub Pagesへデプロイします。
+
+```bash
+make refresh-feeds
+make export-static
+```
+
+GitHub PagesではGoサーバーのトークン保護は使えません。`public/data/items.json`
+に書き出された情報収集データは公開扱いになります。非公開Inboxが必要なら、Docker版を
+VPSやCloudflare Workers系の構成へ出すのが次の選択肢です。

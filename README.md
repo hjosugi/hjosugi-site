@@ -117,6 +117,30 @@ The Google Cloud Tech example is included but disabled until you confirm the cha
 
 ## Deployment
 
+### Cheapest public deployment: GitHub Pages
+
+The repository can export a static portfolio and public signal index to `public/`.
+GitHub Actions refreshes RSS/Atom feeds every six hours and deploys the static
+site to GitHub Pages, so there is no always-on server cost.
+
+```bash
+make refresh-feeds
+make export-static
+```
+
+Notes:
+
+- GitHub Pages cannot protect `/signals` with the Go inbox token. Anything
+  exported to `public/data/items.json` is public.
+- Optional Ollama summaries and embeddings are intentionally disabled in the
+  Pages workflow to keep the deploy free and dependency-light.
+
+Enable Pages with "GitHub Actions" as the source, then push to `main`. The
+included `.github/workflows/pages.yml` handles collection, static export, and
+deployment.
+
+### Server deployment
+
 ```bash
 cp .env.example .env
 # Set strong INBOX_TOKEN and ADMIN_TOKEN values.

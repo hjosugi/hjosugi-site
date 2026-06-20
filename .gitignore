@@ -1,6 +1,7 @@
 .env
 bin/
 coverage.out
+public/
 *.log
 data/items.local.json
 data/*.tmp
