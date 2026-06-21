@@ -16,3 +16,10 @@ data/collection-report.json
 data/*.tmp
 .DS_Store
 erl_crash.dump
+
+# E2E (Playwright) dev tooling — not part of the deployed runtime
+node_modules/
+e2e/screenshots/
+e2e/.output/
+playwright-report/
+test-results/

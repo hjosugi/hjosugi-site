@@ -1,0 +1,44 @@
+[
+  {
+    "id": "fixture-hn-long-url",
+    "source_id": "hacker-news",
+    "source_name": "Hacker News Front Page",
+    "source_kind": "aggregator",
+    "title": "Show HN: an iOS app that raises awareness about long unbroken strings",
+    "url": "https://github.com/myskoach/some-really-long-repository-name-that-should-wrap",
+    "author": "sample",
+    "summary": "Article URL: https://github.com/myskoach/some-really-long-repository-name-that-should-wrap Comments URL: https://news.ycombinator.com/item?id=123456789 Points: 186 # Comments: 42",
+    "content": "A summary that embeds long unbroken URLs which historically pushed the radar layout wider than a phone screen.",
+    "score": 466,
+    "weight": 1.3,
+    "tags": ["hacker-news", "aggregator", "ios"]
+  },
+  {
+    "id": "fixture-spanner",
+    "source_id": "google-cloud",
+    "source_name": "Google Cloud Blog",
+    "source_kind": "official",
+    "title": "Designing a globally distributed data service with external consistency",
+    "url": "https://cloud.google.com/spanner/docs/true-time-external-consistency",
+    "author": "Google Cloud",
+    "summary": "How architecture, consistency, and database tradeoffs appear on the radar.",
+    "content": "Distributed databases must explain consistency, replication, and failure handling.",
+    "score": 0,
+    "weight": 1.0,
+    "tags": ["database", "distributed-systems", "google-cloud", "official"]
+  },
+  {
+    "id": "fixture-lobsters",
+    "source_id": "lobsters",
+    "source_name": "Lobsters",
+    "source_kind": "aggregator",
+    "title": "A pragmatic-engineering-supercalifragilisticexpialidocious-single-word-title-that-cannot-break",
+    "url": "https://lobste.rs/s/abcdef/example",
+    "author": "sample",
+    "summary": "A single very long unbreakable word in the title must not blow out the mobile layout: antidisestablishmentarianism-pneumonoultramicroscopicsilicovolcanoconiosis.",
+    "content": "Edge cases for word wrapping on narrow viewports.",
+    "score": 92,
+    "weight": 1.3,
+    "tags": ["lobsters", "aggregator"]
+  }
+]

@@ -20,6 +20,22 @@ Open `public/index.html` for the portfolio and `public/radar/index.html` for
 the searchable radar index. For the radar page, serve `public/` over HTTP so
 browser `fetch()` can load `data/items.json`.
 
+## E2E / responsive design checks
+
+Browser-based end-to-end tests (Playwright) verify the exported site stays
+responsive — no horizontal overflow on phone, tablet, and desktop viewports —
+and capture full-page screenshots of every page for design review. This is
+dev-only tooling and is never deployed to `public/`.
+
+```bash
+npm ci
+npx playwright install --with-deps chromium
+make e2e   # exports the site, then runs the responsive suite
+```
+
+Screenshots land in `e2e/screenshots/<viewport>/` (gitignored) and are uploaded
+as CI artifacts by the `e2e` job in [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+
 ## Configuration
 
 - `config/site.exs`: profile, links, skills, and selected projects
