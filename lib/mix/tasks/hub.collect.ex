@@ -1,4 +1,4 @@
-defmodule Mix.Tasks.Site.Collect do
+defmodule Mix.Tasks.Hub.Collect do
   use Mix.Task
 
   @shortdoc "Collect RSS/Atom feeds into data/items.term and data/items.json"

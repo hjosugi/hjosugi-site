@@ -1,4 +1,4 @@
-defmodule Mix.Tasks.Site.Export do
+defmodule Mix.Tasks.Hub.Export do
   use Mix.Task
 
   @shortdoc "Export the static GitHub Pages site"
