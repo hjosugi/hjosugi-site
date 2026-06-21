@@ -1,3 +1,7 @@
+// Radar page entry: data loading, routing, rendering, and autocomplete UI.
+import { collator, norm, same, safeURL, el, withParam, debounce } from "./radar-util.js";
+import { prepare, rank, facets } from "./radar-search.js";
+
 (() => {
   const app = document.querySelector("[data-radar-app]");
   if (!app) return;
@@ -13,8 +17,6 @@
   const totalCountNode = app.querySelector("[data-total-count]");
   const suggestNode = document.getElementById("search-suggest");
 
-  const collator = new Intl.Collator(undefined, { sensitivity: "base" });
-
   // The landing view shows only the last N days; search opens the full archive.
   const RECENT_DAYS = 30;
 
@@ -24,78 +26,6 @@
   let sourceFacets = [];
   let uniqueTags = [];
   let uniqueSources = [];
-
-  // --- text + value helpers ---------------------------------------------
-
-  const norm = (value) => String(value || "").trim().toLowerCase();
-  const same = (a, b) => norm(a) === norm(b);
-  const tokens = (value) => norm(value).split(/[^a-z0-9_.+#-]+/).filter(Boolean);
-
-  function parseTs(value) {
-    const ts = Date.parse(value || "");
-    return Number.isFinite(ts) ? ts : 0;
-  }
-
-  function safeURL(value) {
-    try {
-      const url = new URL(value, location.href);
-      return url.protocol === "http:" || url.protocol === "https:" ? url.href : "#";
-    } catch (_) {
-      return "#";
-    }
-  }
-
-  // --- DOM helpers -------------------------------------------------------
-
-  // el("a", {class, href, text, "aria-pressed"}, child|[children]) -> element.
-  // Known DOM properties are assigned directly; everything else via attribute.
-  function el(tag, props = {}, children = []) {
-    const node = document.createElement(tag);
-    for (const [key, value] of Object.entries(props)) {
-      if (key === "class") node.className = value;
-      else if (key === "text") node.textContent = value;
-      else if (key in node) node[key] = value;
-      else node.setAttribute(key, value);
-    }
-    for (const child of [].concat(children)) {
-      if (child != null) node.append(child);
-    }
-    return node;
-  }
-
-  function withParam(base, key, value) {
-    const params = new URLSearchParams(base);
-    if (value) params.set(key, value);
-    else params.delete(key);
-    return params;
-  }
-
-  function onNavigate(params) {
-    return (event) => {
-      event.preventDefault();
-      navigate(params);
-    };
-  }
-
-  // --- search index ------------------------------------------------------
-
-  // Normalized text, a timestamp, and a static base score are computed up front,
-  // so ranking on each keystroke is plain string/number comparison instead of
-  // re-lowercasing long article bodies or re-parsing dates for every item.
-  function prepare(item) {
-    const ts = parseTs(item.published_at || item.collected_at);
-    item._ts = ts;
-    item._date = ts ? new Date(ts).toISOString().slice(0, 10) : "unknown";
-    item._base = baseScore(ts, item.weight, item.score);
-    item._srcId = norm(item.source_id);
-    item._s = {
-      t: norm(item.title),
-      tags: norm((item.tags || []).join(" ")),
-      src: norm(item.source_name),
-      body: norm([item.summary, item.content, item.author].filter(Boolean).join(" ")),
-    };
-    return item;
-  }
 
   function indexData() {
     const tags = new Set();
@@ -109,6 +39,11 @@
     tagFacets = facets(items, "tags");
     sourceFacets = facets(items, "source_name");
   }
+
+  const onNavigate = (params) => (event) => {
+    event.preventDefault();
+    navigate(params);
+  };
 
   // --- saved (localStorage) ---------------------------------------------
 
@@ -227,53 +162,6 @@
     resultsNode.replaceChildren(...visible.map(renderCard));
   }
 
-  // --- ranking -----------------------------------------------------------
-
-  // Field weights for a matched term and for the whole-query phrase. Keys map to
-  // the precomputed item._s fields; the entry lists are hoisted out of the loop.
-  const TERM_WEIGHTS = { t: 7, tags: 5, src: 3, body: 1 };
-  const PHRASE_WEIGHTS = { t: 6, tags: 4, src: 3, body: 2 };
-  const TERM_ENTRIES = Object.entries(TERM_WEIGHTS);
-  const PHRASE_ENTRIES = Object.entries(PHRASE_WEIGHTS);
-
-  // Default ordering when nothing is searched: recency biased by source weight,
-  // plus a popularity nudge from crowd-vote scores (e.g. Hacker News points).
-  function baseScore(ts, weight, points) {
-    const recency = Math.max(0, ts / 1e13);
-    const w = Number(weight) || 1;
-    const popularity = points > 0 ? Math.min(1.5, Math.log10(points + 1) / 2) : 0;
-    return recency * w + popularity;
-  }
-
-  function rank(values, query) {
-    const terms = tokens(query);
-    const phrase = norm(query);
-    if (terms.length === 0 && !phrase) {
-      return [...values].sort((a, b) => b._base - a._base || b._ts - a._ts);
-    }
-    return [...values]
-      .map((item) => ({ item, value: score(item, terms, phrase) }))
-      .sort((a, b) => b.value - a.value || b.item._ts - a.item._ts)
-      .map((entry) => entry.item);
-  }
-
-  function score(item, terms, phrase) {
-    const s = item._s;
-    let value = 0;
-    for (const term of terms) {
-      if (s.t === term) value += 12;
-      for (const [field, weight] of TERM_ENTRIES) {
-        if (s[field].includes(term)) value += weight;
-      }
-    }
-    if (phrase) {
-      for (const [field, weight] of PHRASE_ENTRIES) {
-        if (s[field].includes(phrase)) value += weight;
-      }
-    }
-    return value + item._base;
-  }
-
   // --- facets ------------------------------------------------------------
 
   function renderSavedFacet(node, count, active, baseParams) {
@@ -301,17 +189,6 @@
     link.addEventListener("click", onNavigate(params));
     if (count > 0) link.append(el("b", { text: String(count) }));
     return link;
-  }
-
-  function facets(values, field) {
-    const counts = new Map();
-    for (const item of values) {
-      const entries = field === "tags" ? item.tags || [] : [item[field]].filter(Boolean);
-      for (const entry of entries) counts.set(entry, (counts.get(entry) || 0) + 1);
-    }
-    return [...counts.entries()]
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count || collator.compare(a.name, b.name));
   }
 
   // --- cards -------------------------------------------------------------
@@ -453,14 +330,6 @@
     }
     input.value = "";
     navigate(withParam(new URLSearchParams(), choice.kind, choice.label));
-  }
-
-  function debounce(fn, ms) {
-    let timer;
-    return () => {
-      window.clearTimeout(timer);
-      timer = window.setTimeout(fn, ms);
-    };
   }
 
   if (input && suggestNode) {

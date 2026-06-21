@@ -10,8 +10,8 @@
   <link rel="icon" href="../static/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="../static/app.css">
   <script defer src="../static/app-static.js"></script>
-  <script defer src="../static/radar.js"></script>
-  <script defer src="../static/pet.js"></script>
+  <script type="module" src="../static/radar.js"></script>
+  <script type="module" src="../static/pet.js"></script>
 </head>
 <body class="crt">
 <header class="site-header">
