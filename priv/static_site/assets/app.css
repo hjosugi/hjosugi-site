@@ -271,3 +271,69 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4p
     height: 72px;
   }
 }
+
+/* radar: save-for-later (localStorage only) */
+.save-btn {
+  margin-left: auto;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 2px 10px;
+  font: inherit;
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.save-btn:hover { color: var(--accent); border-color: var(--accent); }
+.save-btn.saved { color: var(--warning); border-color: var(--warning); }
+
+/* 前方後円墳 pixel mascot */
+.kofun-pet {
+  position: fixed;
+  left: 0;
+  bottom: 10px;
+  z-index: 30;
+  width: 52px;
+  height: 52px;
+  color: #57c191;
+  cursor: pointer;
+  transform: translateX(28px);
+  filter: drop-shadow(0 5px 5px rgba(0, 0, 0, 0.45));
+}
+.kofun-pet:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; border-radius: 8px; }
+.kofun-sprite { width: 100%; height: 100%; transform-origin: 50% 100%; }
+.kofun-svg { display: block; width: 100%; height: 100%; }
+.kofun-sprite.walking { animation: kofun-waddle 540ms ease-in-out infinite; }
+.kofun-sprite.jump { animation: kofun-jump 620ms ease-out; }
+
+@keyframes kofun-waddle {
+  0%, 100% { transform: rotate(-5deg); }
+  50% { transform: rotate(5deg); }
+}
+@keyframes kofun-jump {
+  0% { transform: translateY(0) scale(1, 1); }
+  18% { transform: translateY(0) scale(1.14, 0.82); }
+  45% { transform: translateY(-26px) scale(0.92, 1.12); }
+  72% { transform: translateY(0) scale(1.08, 0.9); }
+  100% { transform: translateY(0) scale(1, 1); }
+}
+.kofun-spark {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  color: var(--accent);
+  font-size: 0.85rem;
+  pointer-events: none;
+  animation: kofun-spark 900ms ease-out forwards;
+}
+@keyframes kofun-spark {
+  0% { opacity: 0; transform: translate(-50%, 0) scale(0.6); }
+  30% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -26px) scale(1); }
+}
+
+@media (max-width: 560px) {
+  .kofun-pet { width: 44px; height: 44px; bottom: 8px; }
+}

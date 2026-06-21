@@ -9,10 +9,48 @@
   const clearNode = app.querySelector("[data-clear-filters]");
   const tagFacetsNode = app.querySelector("[data-tag-facets]");
   const sourceFacetsNode = app.querySelector("[data-source-facets]");
+  const savedFacetsNode = app.querySelector("[data-saved-facets]");
   const totalCountNode = app.querySelector("[data-total-count]");
   let items = [];
 
   const collator = new Intl.Collator(undefined, { sensitivity: "base" });
+
+  const SAVED_KEY = "hjosugi-hub-saved";
+  const saved = loadSaved();
+
+  function loadSaved() {
+    try {
+      const raw = window.localStorage.getItem(SAVED_KEY);
+      const list = raw ? JSON.parse(raw) : [];
+      return new Set(Array.isArray(list) ? list.map(String) : []);
+    } catch (_) {
+      return new Set();
+    }
+  }
+
+  function persistSaved() {
+    try {
+      window.localStorage.setItem(SAVED_KEY, JSON.stringify([...saved]));
+    } catch (_) {
+      /* private mode or full storage: keep the in-memory set only */
+    }
+  }
+
+  function itemKey(item) {
+    return String(item.id || item.url || item.title || "");
+  }
+
+  function isSaved(item) {
+    return saved.has(itemKey(item));
+  }
+
+  function toggleSaved(item) {
+    const key = itemKey(item);
+    if (saved.has(key)) saved.delete(key);
+    else saved.add(key);
+    persistSaved();
+    render(currentParams());
+  }
 
   fetch(app.dataset.itemsUrl)
     .then((response) => {
@@ -49,23 +87,30 @@
     const query = params.get("q") || "";
     const tag = params.get("tag") || "";
     const source = params.get("source") || "";
+    const onlySaved = params.get("saved") === "1";
     const ranked = rank(items, query)
+      .filter((item) => !onlySaved || isSaved(item))
       .filter((item) => !tag || item.tags?.some((value) => same(value, tag)))
       .filter((item) => !source || same(item.source_name, source) || same(item.source_id, source));
     const visible = ranked.slice(0, 80);
 
-    summaryNode.textContent = summaryText(visible.length, ranked.length, query, tag, source);
-    clearNode.hidden = !(query || tag || source);
+    summaryNode.textContent = summaryText(visible.length, ranked.length, query, tag, source, onlySaved);
+    clearNode.hidden = !(query || tag || source || onlySaved);
     clearNode.onclick = (event) => {
       event.preventDefault();
       navigate(new URLSearchParams());
     };
 
+    renderSavedFacet(savedFacetsNode, items.filter(isSaved).length, onlySaved, params);
     renderFacets(tagFacetsNode, facets(items, "tags"), "tag", tag, params);
     renderFacets(sourceFacetsNode, facets(items, "source_name"), "source", source, params);
 
     if (visible.length === 0) {
-      resultsNode.replaceChildren(emptyState("!", "Try a broader query or clear the active filters."));
+      const message =
+        onlySaved && saved.size === 0
+          ? "Nothing saved yet. Tap the star on any item to keep it here."
+          : "Try a broader query or clear the active filters.";
+      resultsNode.replaceChildren(emptyState("!", message));
       return;
     }
     resultsNode.replaceChildren(...visible.map(renderCard));
@@ -101,6 +146,13 @@
       if (body.includes(phrase)) value += 2;
     }
     return value + dateScore;
+  }
+
+  function renderSavedFacet(node, count, active, baseParams) {
+    if (!node) return;
+    const all = facetLink("all", "", "saved", !active, baseParams, 0);
+    const only = facetLink("★ saved", "1", "saved", active, baseParams, count);
+    node.replaceChildren(all, only);
   }
 
   function renderFacets(node, entries, key, activeValue, baseParams) {
@@ -141,6 +193,7 @@
     meta.append(textSpan(item.source_name || "unknown source"));
     meta.append(textSpan(dateLabel(item)));
     if (item.source_kind) meta.append(textSpan(item.source_kind));
+    meta.append(saveButton(item));
 
     const title = document.createElement("h2");
     const link = document.createElement("a");
@@ -181,6 +234,21 @@
     return article;
   }
 
+  function saveButton(item) {
+    const active = isSaved(item);
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "save-btn" + (active ? " saved" : "");
+    button.textContent = active ? "★ saved" : "☆ save";
+    button.setAttribute("aria-pressed", String(active));
+    button.title = active ? "remove from saved" : "save to this browser";
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      toggleSaved(item);
+    });
+    return button;
+  }
+
   function emptyState(prefix, message) {
     const box = document.createElement("div");
     box.className = "empty-state";
@@ -207,8 +275,9 @@
       .sort((a, b) => b.count - a.count || collator.compare(a.name, b.name));
   }
 
-  function summaryText(visible, total, query, tag, source) {
+  function summaryText(visible, total, query, tag, source, onlySaved) {
     const parts = [];
+    if (onlySaved) parts.push("saved");
     if (query) parts.push("query \"" + query + "\"");
     if (tag) parts.push("tag " + tag);
     if (source) parts.push("source " + source);

@@ -1,7 +1,7 @@
 defmodule HjosugiHub.Renderer do
   @moduledoc false
 
-  alias HjosugiHub.{Config, Store}
+  alias HjosugiHub.{Config, Kofun, Store}
 
   @template_dir Path.expand("../../priv/static_site/templates", __DIR__)
   @asset_dir Path.expand("../../priv/static_site/assets", __DIR__)
@@ -17,6 +17,7 @@ defmodule HjosugiHub.Renderer do
       featured: Enum.filter(Map.get(site, :projects, []), &Map.get(&1, :featured, false)),
       others: Enum.reject(Map.get(site, :projects, []), &Map.get(&1, :featured, false)),
       avatar_url: Config.avatar_url(site),
+      kofun: Kofun.pet_html(),
       items: public_items,
       generated_text: Calendar.strftime(now, "%Y-%m-%d %H:%M UTC"),
       year: now.year,
@@ -29,6 +30,7 @@ defmodule HjosugiHub.Renderer do
     Store.write_json(Path.join(out_dir, "data/site.json"), site)
     Store.write_json(Path.join(out_dir, "data/feeds.json"), public_feeds(feeds))
     copy_assets(out_dir)
+    File.write!(Path.join(out_dir, "static/favicon.svg"), Kofun.favicon_svg())
     File.write!(Path.join(out_dir, ".nojekyll"), "")
     File.write!(Path.join(out_dir, "robots.txt"), robots(assigns.base_url))
 

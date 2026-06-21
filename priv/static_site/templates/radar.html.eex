@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="../static/app.css">
   <script defer src="../static/app-static.js"></script>
   <script defer src="../static/radar.js"></script>
+  <script defer src="../static/pet.js"></script>
 </head>
 <body class="crt">
 <header class="site-header">
@@ -51,6 +52,10 @@
   <div class="inbox-layout">
     <aside class="filter-panel">
       <div class="filter-section">
+        <h2>saved</h2>
+        <div data-saved-facets></div>
+      </div>
+      <div class="filter-section">
         <h2>tags</h2>
         <div data-tag-facets></div>
       </div>
@@ -58,7 +63,7 @@
         <h2>sources</h2>
         <div data-source-facets></div>
       </div>
-      <p class="static-note">This page has no server-side private mode. Anything deployed here is public.</p>
+      <p class="static-note">Saved items live only in this browser (localStorage). This page is public — anything deployed here is public too.</p>
     </aside>
 
     <section class="results" aria-live="polite">
@@ -81,5 +86,6 @@
     <p>&copy; <%= @year %> <%= HTML.escape(@site.handle) %></p>
   </div>
 </footer>
+<%= @kofun %>
 </body>
 </html>

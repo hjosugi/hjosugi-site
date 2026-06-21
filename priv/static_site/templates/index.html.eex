@@ -10,6 +10,7 @@
   <link rel="icon" href="static/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="static/app.css">
   <script defer src="static/app-static.js"></script>
+  <script defer src="static/pet.js"></script>
 </head>
 <body class="crt">
 <header class="site-header">
@@ -34,8 +35,8 @@
     <p class="headline"><%= HTML.escape(@site.headline) %></p>
     <p class="lede"><%= HTML.escape(@site.about) %></p>
     <div class="hero-actions">
-      <a class="primary-button" href="#projects">view selected work</a>
-      <a class="secondary-button" href="radar/">open technical radar</a>
+      <a class="primary-button" href="#projects">see what i tinker with</a>
+      <a class="secondary-button" href="radar/">my reading radar</a>
     </div>
     <dl class="status-strip" aria-label="Site status">
       <div><dt>location</dt><dd><%= HTML.escape(@site.location) %></dd></div>
@@ -47,13 +48,13 @@
 
   <section class="shell section" id="projects">
     <div class="section-heading">
-      <div><p class="terminal-line"><span class="prompt">$</span> ls ./selected-work</p><h2>Selected work</h2></div>
-      <p>Projects chosen for product impact, architecture decisions, and operational clarity.</p>
+      <div><p class="terminal-line"><span class="prompt">$</span> ls ~/hobby</p><h2>Things I tinker with</h2></div>
+      <p>Small things I build on weekends. Half experiment, half unfinished, occasionally useful.</p>
     </div>
     <div class="project-grid featured-grid">
       <%= for project <- @featured do %>
       <article class="project-card featured-card">
-        <div class="card-topline"><span>featured</span><span>-&gt;</span></div>
+        <div class="card-topline"><span>for fun</span><span>-&gt;</span></div>
         <h3><a href="<%= HTML.escape(project.url) %>" target="_blank" rel="noopener"><%= HTML.escape(project.name) %></a></h3>
         <p><%= HTML.escape(project.summary) %></p>
         <ul class="highlight-list">
@@ -82,8 +83,8 @@
 
   <section class="shell section split-section">
     <div>
-      <p class="terminal-line"><span class="prompt">$</span> cat skills.txt</p>
-      <h2>Engineering focus</h2>
+      <p class="terminal-line"><span class="prompt">$</span> cat ~/.stuff-i-poke-at</p>
+      <h2>Stuff I poke at</h2>
     </div>
     <div class="skill-groups">
       <%= for group <- @site.skills do %>
@@ -98,8 +99,8 @@
   <section class="shell section radar-callout">
     <div>
       <p class="terminal-line"><span class="prompt">$</span> mix hub.collect</p>
-      <h2>A public radar for technical change</h2>
-      <p>The radar page is rebuilt from RSS, Atom, and YouTube feeds by GitHub Actions. It stays cheap because the deployed site is static.</p>
+      <h2>A little radar of what I'm reading</h2>
+      <p>A pile of RSS, Atom, and YouTube feeds I follow, rebuilt by GitHub Actions. You can search it and star the ones you like — everything stays in your browser.</p>
     </div>
     <a class="primary-button" href="radar/">open radar</a>
   </section>
@@ -110,5 +111,6 @@
     <p>&copy; <%= @year %> <%= HTML.escape(@site.handle) %></p>
   </div>
 </footer>
+<%= @kofun %>
 </body>
 </html>
