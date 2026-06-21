@@ -15,13 +15,46 @@
 
   const collator = new Intl.Collator(undefined, { sensitivity: "base" });
 
+  // --- DOM helpers -------------------------------------------------------
+
+  // el("a", {class, href, text, "aria-pressed"}, child|[children]) -> element.
+  // Known DOM properties are assigned directly; everything else via attribute.
+  function el(tag, props = {}, children = []) {
+    const node = document.createElement(tag);
+    for (const [key, value] of Object.entries(props)) {
+      if (key === "class") node.className = value;
+      else if (key === "text") node.textContent = value;
+      else if (key in node) node[key] = value;
+      else node.setAttribute(key, value);
+    }
+    for (const child of [].concat(children)) {
+      if (child != null) node.append(child);
+    }
+    return node;
+  }
+
+  function withParam(base, key, value) {
+    const params = new URLSearchParams(base);
+    if (value) params.set(key, value);
+    else params.delete(key);
+    return params;
+  }
+
+  function onNavigate(params) {
+    return (event) => {
+      event.preventDefault();
+      navigate(params);
+    };
+  }
+
+  // --- saved (localStorage) ---------------------------------------------
+
   const SAVED_KEY = "hjosugi-hub-saved";
   const saved = loadSaved();
 
   function loadSaved() {
     try {
-      const raw = window.localStorage.getItem(SAVED_KEY);
-      const list = raw ? JSON.parse(raw) : [];
+      const list = JSON.parse(window.localStorage.getItem(SAVED_KEY) || "[]");
       return new Set(Array.isArray(list) ? list.map(String) : []);
     } catch (_) {
       return new Set();
@@ -36,21 +69,17 @@
     }
   }
 
-  function itemKey(item) {
-    return String(item.id || item.url || item.title || "");
-  }
-
-  function isSaved(item) {
-    return saved.has(itemKey(item));
-  }
+  const itemKey = (item) => String(item.id || item.url || item.title || "");
+  const isSaved = (item) => saved.has(itemKey(item));
 
   function toggleSaved(item) {
     const key = itemKey(item);
-    if (saved.has(key)) saved.delete(key);
-    else saved.add(key);
+    saved.has(key) ? saved.delete(key) : saved.add(key);
     persistSaved();
     render(currentParams());
   }
+
+  // --- data + routing ----------------------------------------------------
 
   fetch(app.dataset.itemsUrl)
     .then((response) => {
@@ -69,10 +98,7 @@
 
   form?.addEventListener("submit", (event) => {
     event.preventDefault();
-    const params = currentParams();
-    params.set("q", input.value.trim());
-    if (!params.get("q")) params.delete("q");
-    navigate(params);
+    navigate(withParam(currentParams(), "q", input.value.trim()));
   });
 
   window.addEventListener("popstate", updateFromLocation);
@@ -82,6 +108,16 @@
     input.value = params.get("q") || "";
     render(params);
   }
+
+  function navigate(params) {
+    const query = params.toString();
+    history.pushState(null, "", query ? "?" + query : location.pathname);
+    updateFromLocation();
+  }
+
+  const currentParams = () => new URLSearchParams(location.search);
+
+  // --- render ------------------------------------------------------------
 
   function render(params) {
     const query = params.get("q") || "";
@@ -96,10 +132,7 @@
 
     summaryNode.textContent = summaryText(visible.length, ranked.length, query, tag, source, onlySaved);
     clearNode.hidden = !(query || tag || source || onlySaved);
-    clearNode.onclick = (event) => {
-      event.preventDefault();
-      navigate(new URLSearchParams());
-    };
+    clearNode.onclick = onNavigate(new URLSearchParams());
 
     renderSavedFacet(savedFacetsNode, items.filter(isSaved).length, onlySaved, params);
     renderFacets(tagFacetsNode, facets(items, "tags"), "tag", tag, params);
@@ -118,150 +151,70 @@
 
   function rank(values, query) {
     const terms = tokens(query);
-    return [...values].map((item) => ({ item, score: score(item, terms, query) }))
+    return [...values]
+      .map((item) => ({ item, score: score(item, terms, query) }))
       .sort((a, b) => b.score - a.score || dateValue(b.item) - dateValue(a.item))
       .map((entry) => entry.item);
   }
 
+  // Field weights for a matched term and for the whole-query phrase.
+  const TERM_WEIGHTS = { title: 7, tags: 5, source: 3, body: 1 };
+  const PHRASE_WEIGHTS = { title: 6, tags: 4, source: 3, body: 2 };
+
   function score(item, terms, query) {
-    const dateScore = Math.max(0, dateValue(item) / 10000000000000);
+    const dateScore = Math.max(0, dateValue(item) / 1e13);
     const phrase = norm(query);
-    const title = norm(item.title);
-    const tags = norm((item.tags || []).join(" "));
-    const source = norm(item.source_name);
-    const body = norm([item.summary, item.content, item.author].filter(Boolean).join(" "));
-    let value = 0;
     if (terms.length === 0 && !phrase) return dateScore;
+
+    const fields = {
+      title: norm(item.title),
+      tags: norm((item.tags || []).join(" ")),
+      source: norm(item.source_name),
+      body: norm([item.summary, item.content, item.author].filter(Boolean).join(" ")),
+    };
+
+    let value = 0;
     for (const term of terms) {
-      if (title === term) value += 12;
-      if (title.includes(term)) value += 7;
-      if (tags.includes(term)) value += 5;
-      if (source.includes(term)) value += 3;
-      if (body.includes(term)) value += 1;
+      if (fields.title === term) value += 12;
+      for (const [field, weight] of Object.entries(TERM_WEIGHTS)) {
+        if (fields[field].includes(term)) value += weight;
+      }
     }
     if (phrase) {
-      if (title.includes(phrase)) value += 6;
-      if (tags.includes(phrase)) value += 4;
-      if (source.includes(phrase)) value += 3;
-      if (body.includes(phrase)) value += 2;
+      for (const [field, weight] of Object.entries(PHRASE_WEIGHTS)) {
+        if (fields[field].includes(phrase)) value += weight;
+      }
     }
     return value + dateScore;
   }
 
+  // --- facets ------------------------------------------------------------
+
   function renderSavedFacet(node, count, active, baseParams) {
     if (!node) return;
-    const all = facetLink("all", "", "saved", !active, baseParams, 0);
-    const only = facetLink("★ saved", "1", "saved", active, baseParams, count);
-    node.replaceChildren(all, only);
+    node.replaceChildren(
+      facetLink("all", "", "saved", !active, baseParams, 0),
+      facetLink("★ saved", "1", "saved", active, baseParams, count)
+    );
   }
 
   function renderFacets(node, entries, key, activeValue, baseParams) {
-    const all = facetLink("all", "", key, activeValue === "", baseParams, 0);
-    const links = [all, ...entries.slice(0, 28).map((entry) => facetLink(entry.name, entry.name, key, same(activeValue, entry.name), baseParams, entry.count))];
-    node.replaceChildren(...links);
+    const links = entries
+      .slice(0, 28)
+      .map((entry) => facetLink(entry.name, entry.name, key, same(activeValue, entry.name), baseParams, entry.count));
+    node.replaceChildren(facetLink("all", "", key, activeValue === "", baseParams, 0), ...links);
   }
 
   function facetLink(label, value, key, active, baseParams, count) {
-    const params = new URLSearchParams(baseParams);
-    if (value) params.set(key, value);
-    else params.delete(key);
-    const link = document.createElement("a");
-    link.className = "filter-link" + (active ? " active" : "");
-    link.href = "?" + params.toString();
-    link.addEventListener("click", (event) => {
-      event.preventDefault();
-      navigate(params);
-    });
-
-    const name = document.createElement("span");
-    name.textContent = label;
-    link.append(name);
-    if (count > 0) {
-      const badge = document.createElement("b");
-      badge.textContent = String(count);
-      link.append(badge);
-    }
+    const params = withParam(baseParams, key, value);
+    const link = el(
+      "a",
+      { class: "filter-link" + (active ? " active" : ""), href: "?" + params.toString() },
+      el("span", { text: label })
+    );
+    link.addEventListener("click", onNavigate(params));
+    if (count > 0) link.append(el("b", { text: String(count) }));
     return link;
-  }
-
-  function renderCard(item) {
-    const article = document.createElement("article");
-    article.className = "radar-card";
-
-    const meta = document.createElement("div");
-    meta.className = "radar-meta";
-    meta.append(textSpan(item.source_name || "unknown source"));
-    meta.append(textSpan(dateLabel(item)));
-    if (item.source_kind) meta.append(textSpan(item.source_kind));
-    meta.append(saveButton(item));
-
-    const title = document.createElement("h2");
-    const link = document.createElement("a");
-    link.href = safeURL(item.url);
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    link.textContent = item.title || "Untitled";
-    title.append(link);
-
-    const summary = document.createElement("p");
-    summary.textContent = item.summary || "No summary provided by the source.";
-
-    const footer = document.createElement("div");
-    footer.className = "radar-footer";
-    const chips = document.createElement("div");
-    chips.className = "chip-row";
-    for (const tag of item.tags || []) {
-      const chip = document.createElement("a");
-      chip.className = "chip link-chip";
-      const params = currentParams();
-      params.set("tag", tag);
-      chip.href = "?" + params.toString();
-      chip.textContent = tag;
-      chip.addEventListener("click", (event) => {
-        event.preventDefault();
-        navigate(params);
-      });
-      chips.append(chip);
-    }
-    footer.append(chips);
-    if (item.author) {
-      const author = document.createElement("span");
-      author.textContent = "by " + item.author;
-      footer.append(author);
-    }
-
-    article.append(meta, title, summary, footer);
-    return article;
-  }
-
-  function saveButton(item) {
-    const active = isSaved(item);
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "save-btn" + (active ? " saved" : "");
-    button.textContent = active ? "★ saved" : "☆ save";
-    button.setAttribute("aria-pressed", String(active));
-    button.title = active ? "remove from saved" : "save to this browser";
-    button.addEventListener("click", (event) => {
-      event.preventDefault();
-      toggleSaved(item);
-    });
-    return button;
-  }
-
-  function emptyState(prefix, message) {
-    const box = document.createElement("div");
-    box.className = "empty-state";
-    const line = document.createElement("p");
-    line.className = "terminal-line";
-    const prompt = document.createElement("span");
-    prompt.className = "prompt";
-    prompt.textContent = prefix;
-    line.append(prompt, " no matching items");
-    const title = document.createElement("h2");
-    title.textContent = message;
-    box.append(line, title);
-    return box;
   }
 
   function facets(values, field) {
@@ -275,37 +228,83 @@
       .sort((a, b) => b.count - a.count || collator.compare(a.name, b.name));
   }
 
+  // --- cards -------------------------------------------------------------
+
+  function renderCard(item) {
+    const meta = el("div", { class: "radar-meta" }, [
+      el("span", { text: item.source_name || "unknown source" }),
+      el("span", { text: dateLabel(item) }),
+      item.source_kind ? el("span", { text: item.source_kind }) : null,
+      saveButton(item),
+    ]);
+
+    const title = el(
+      "h2",
+      {},
+      el("a", {
+        href: safeURL(item.url),
+        target: "_blank",
+        rel: "noopener noreferrer",
+        text: item.title || "Untitled",
+      })
+    );
+
+    const summary = el("p", { text: item.summary || "No summary provided by the source." });
+
+    const footer = el("div", { class: "radar-footer" }, [
+      el("div", { class: "chip-row" }, (item.tags || []).map(tagChip)),
+      item.author ? el("span", { text: "by " + item.author }) : null,
+    ]);
+
+    return el("article", { class: "radar-card" }, [meta, title, summary, footer]);
+  }
+
+  function tagChip(tag) {
+    const params = withParam(currentParams(), "tag", tag);
+    const chip = el("a", { class: "chip link-chip", href: "?" + params.toString(), text: tag });
+    chip.addEventListener("click", onNavigate(params));
+    return chip;
+  }
+
+  function saveButton(item) {
+    const active = isSaved(item);
+    const button = el("button", {
+      type: "button",
+      class: "save-btn" + (active ? " saved" : ""),
+      text: active ? "★ saved" : "☆ save",
+      "aria-pressed": String(active),
+      title: active ? "remove from saved" : "save to this browser",
+    });
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      toggleSaved(item);
+    });
+    return button;
+  }
+
+  function emptyState(prefix, message) {
+    const line = el("p", { class: "terminal-line" }, [
+      el("span", { class: "prompt", text: prefix }),
+      " no matching items",
+    ]);
+    return el("div", { class: "empty-state" }, [line, el("h2", { text: message })]);
+  }
+
+  // --- text + value helpers ---------------------------------------------
+
   function summaryText(visible, total, query, tag, source, onlySaved) {
     const parts = [];
     if (onlySaved) parts.push("saved");
-    if (query) parts.push("query \"" + query + "\"");
+    if (query) parts.push('query "' + query + '"');
     if (tag) parts.push("tag " + tag);
     if (source) parts.push("source " + source);
     const scope = parts.length ? " for " + parts.join(", ") : "";
     return visible + " shown / " + total + " matches" + scope;
   }
 
-  function navigate(params) {
-    const query = params.toString();
-    history.pushState(null, "", query ? "?" + query : location.pathname);
-    updateFromLocation();
-  }
-
-  function currentParams() {
-    return new URLSearchParams(location.search);
-  }
-
-  function tokens(value) {
-    return norm(value).split(/[^a-z0-9_.+#-]+/).filter(Boolean);
-  }
-
-  function norm(value) {
-    return String(value || "").trim().toLowerCase();
-  }
-
-  function same(a, b) {
-    return norm(a) === norm(b);
-  }
+  const tokens = (value) => norm(value).split(/[^a-z0-9_.+#-]+/).filter(Boolean);
+  const norm = (value) => String(value || "").trim().toLowerCase();
+  const same = (a, b) => norm(a) === norm(b);
 
   function dateValue(item) {
     const value = Date.parse(item.published_at || item.collected_at || "");
@@ -314,14 +313,7 @@
 
   function dateLabel(item) {
     const value = dateValue(item);
-    if (!value) return "unknown";
-    return new Date(value).toISOString().slice(0, 10);
-  }
-
-  function textSpan(value) {
-    const span = document.createElement("span");
-    span.textContent = value;
-    return span;
+    return value ? new Date(value).toISOString().slice(0, 10) : "unknown";
   }
 
   function safeURL(value) {

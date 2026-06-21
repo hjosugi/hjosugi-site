@@ -115,8 +115,9 @@ h1 { font-size: clamp(3rem, 9vw, 7.4rem); margin: 0; max-width: 13ch; }
 .section-heading h2, .split-section h2, .radar-callout h2 { margin: 0; font-size: clamp(2rem, 5vw, 3.7rem); }
 .section-heading > p { color: var(--muted); margin: 0; }
 .project-grid { display: grid; gap: 16px; }
-.featured-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.compact-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 16px; }
+.featured-grid,
+.compact-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); }
+.compact-grid { margin-top: 16px; }
 .project-card {
   position: relative;
   border: 1px solid var(--line);
@@ -206,7 +207,6 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4p
   .status-strip div:nth-child(2) { border-right: 0; }
   .status-strip div:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
   .section-heading, .split-section { grid-template-columns: 1fr; gap: 18px; }
-  .featured-grid, .compact-grid { grid-template-columns: 1fr; }
   .radar-callout, .inbox-header { align-items: start; flex-direction: column; }
   .inbox-layout { grid-template-columns: 1fr; }
   .filter-panel { position: static; max-height: none; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
