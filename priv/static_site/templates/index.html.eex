@@ -8,9 +8,9 @@
   <meta name="description" content="<%= HTML.escape(@site.headline) %>">
   <title><%= HTML.escape(@site.handle) %> - <%= HTML.escape(@site.headline) %></title>
   <link rel="icon" href="static/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="static/app.css">
-  <script defer src="static/app-static.js"></script>
-  <script type="module" src="static/pet.js"></script>
+  <link rel="stylesheet" href="static/app.css?v=<%= @asset_version %>">
+  <script defer src="static/app-static.js?v=<%= @asset_version %>"></script>
+  <script type="module" src="static/pet.js?v=<%= @asset_version %>"></script>
 </head>
 <body class="crt">
 <header class="site-header">

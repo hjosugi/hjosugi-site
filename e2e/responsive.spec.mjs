@@ -91,6 +91,27 @@ test("radar tabs link across the three scoped pages", async ({ page }) => {
   await expect(page.locator(".radar-tab.active")).toHaveText("news");
 });
 
+test("static assets are cache-busted with a version query", async ({ page }) => {
+  // Fail the build if a deploy could be masked by stale CSS/JS caches.
+  const requests = [];
+  page.on("request", (req) => {
+    const url = req.url();
+    if (/\/static\/.+\.(css|js)(\?|$)/.test(url)) requests.push(url);
+  });
+  const failed = [];
+  page.on("requestfailed", (req) => failed.push(req.url()));
+
+  await page.goto("/radar/", { waitUntil: "networkidle" });
+  await page.waitForSelector(".radar-card");
+
+  expect(requests.length).toBeGreaterThan(0);
+  for (const url of requests) {
+    expect(url, `asset not versioned: ${url}`).toMatch(/\?v=[0-9a-f]{8}/);
+  }
+  // A versioned import that 404s would break the page; assert none failed.
+  expect(failed.filter((u) => /\/static\/.+\.js/.test(u))).toEqual([]);
+});
+
 test("radar search input stays inside the viewport", async ({ page }) => {
   await page.goto("/radar/", { waitUntil: "networkidle" });
   const input = page.locator("#radar-search");

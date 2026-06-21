@@ -8,6 +8,7 @@ defmodule HjosugiHub.Renderer do
 
   def export(site, feeds, items, out_dir, base_url \\ "") do
     weights = Map.new(feeds, fn feed -> {feed.id, Config.feed_weight(feed)} end)
+    asset_version = asset_version()
 
     public_items =
       items
@@ -27,7 +28,8 @@ defmodule HjosugiHub.Renderer do
       items: public_items,
       generated_text: Calendar.strftime(now, "%Y-%m-%d %H:%M UTC"),
       year: now.year,
-      base_url: String.trim_trailing(base_url || "", "/")
+      base_url: String.trim_trailing(base_url || "", "/"),
+      asset_version: asset_version
     }
 
     write_rendered(out_dir, "index.html", "index.html.eex", assigns)
@@ -35,7 +37,7 @@ defmodule HjosugiHub.Renderer do
     Store.write_json(Path.join(out_dir, "data/items.json"), public_items)
     Store.write_json(Path.join(out_dir, "data/site.json"), site)
     Store.write_json(Path.join(out_dir, "data/feeds.json"), public_feeds(feeds))
-    copy_assets(out_dir)
+    copy_assets(out_dir, asset_version)
     File.write!(Path.join(out_dir, "static/favicon.svg"), Kofun.favicon_svg())
     File.write!(Path.join(out_dir, ".nojekyll"), "")
     File.write!(Path.join(out_dir, "robots.txt"), robots(assigns.base_url))
@@ -70,14 +72,46 @@ defmodule HjosugiHub.Renderer do
     File.write!(Path.join(dir, file), html)
   end
 
-  defp copy_assets(out_dir) do
+  defp copy_assets(out_dir, version) do
     target = Path.join(out_dir, "static")
     File.mkdir_p!(target)
 
     @asset_dir
     |> Path.join("*")
     |> Path.wildcard()
-    |> Enum.each(fn path -> File.cp!(path, Path.join(target, Path.basename(path))) end)
+    |> Enum.each(fn path ->
+      dest = Path.join(target, Path.basename(path))
+
+      if String.ends_with?(path, ".js") do
+        File.write!(dest, version_imports(File.read!(path), version))
+      else
+        File.cp!(path, dest)
+      end
+    end)
+  end
+
+  # Cache-busting version derived from the static bundle's content. It changes
+  # only when an asset changes (data-only refreshes keep it stable), so a deploy
+  # is guaranteed to be reflected without re-downloading unchanged assets.
+  defp asset_version do
+    @asset_dir
+    |> Path.join("*")
+    |> Path.wildcard()
+    |> Enum.sort()
+    |> Enum.map_join("\n", &File.read!/1)
+    |> then(&:crypto.hash(:sha256, &1))
+    |> Base.encode16(case: :lower)
+    |> binary_part(0, 8)
+  end
+
+  # ES module imports resolve by URL, so relative `import ... from "./x.js"`
+  # specifiers need the same version query as the HTML <script> tags; otherwise
+  # a changed sub-module could still be served from cache.
+  @import_re ~r/(\bfrom\s*["']|\bimport\(\s*["'])(\.{1,2}\/[^"']+\.js)(["'])/
+  defp version_imports(js, version) do
+    Regex.replace(@import_re, js, fn _full, prefix, spec, quote ->
+      prefix <> spec <> "?v=" <> version <> quote
+    end)
   end
 
   defp public_feeds(feeds) do

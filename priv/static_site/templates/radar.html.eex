@@ -8,10 +8,10 @@
   <meta name="description" content="Search collected technical reading items from <%= HTML.escape(@site.handle) %>">
   <title><%= if @category == "all", do: "radar", else: "radar/" <> @category %> - <%= HTML.escape(@site.handle) %></title>
   <link rel="icon" href="<%= @root %>static/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="<%= @root %>static/app.css">
-  <script defer src="<%= @root %>static/app-static.js"></script>
-  <script type="module" src="<%= @root %>static/radar.js"></script>
-  <script type="module" src="<%= @root %>static/pet.js"></script>
+  <link rel="stylesheet" href="<%= @root %>static/app.css?v=<%= @asset_version %>">
+  <script defer src="<%= @root %>static/app-static.js?v=<%= @asset_version %>"></script>
+  <script type="module" src="<%= @root %>static/radar.js?v=<%= @asset_version %>"></script>
+  <script type="module" src="<%= @root %>static/pet.js?v=<%= @asset_version %>"></script>
 </head>
 <body class="crt">
 <header class="site-header">
