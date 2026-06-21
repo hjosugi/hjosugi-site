@@ -28,4 +28,23 @@
       }
     }
   });
+
+  // Fade sections in as they scroll into view (skipped for reduced motion).
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (!reduceMotion && "IntersectionObserver" in window) {
+    const observer = new IntersectionObserver(
+      (entries, obs) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          entry.target.classList.add("in-view");
+          obs.unobserve(entry.target);
+        }
+      },
+      { threshold: 0.12 }
+    );
+    for (const section of document.querySelectorAll(".section")) {
+      section.classList.add("reveal");
+      observer.observe(section);
+    }
+  }
 })();
