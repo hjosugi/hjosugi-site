@@ -157,6 +157,20 @@ h1 { font-size: clamp(3rem, 9vw, 7.4rem); margin: 0; max-width: 13ch; }
 .radar-callout p:last-child { color: var(--muted); }
 
 .inbox-shell { padding: 58px 0 96px; --radar-stick: 190px; }
+.radar-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 26px 0 0; }
+.radar-tab {
+  text-decoration: none;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 16px;
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  background: rgba(11, 23, 20, 0.55);
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+.radar-tab:hover { color: var(--text); border-color: var(--accent); }
+.radar-tab.active { color: var(--bg); background: var(--accent); border-color: var(--accent); font-weight: 700; }
 .inbox-header { display: flex; justify-content: space-between; align-items: end; gap: 24px; }
 .inbox-header h1 { font-size: clamp(1.6rem, 5vw, 3.6rem); max-width: none; white-space: nowrap; }
 .inbox-header p { color: var(--muted); }

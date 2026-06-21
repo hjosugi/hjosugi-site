@@ -20,6 +20,26 @@ import { prepare, rank, facets } from "./radar-search.js";
   // The landing view shows only the last N days; search opens the full archive.
   const RECENT_DAYS = 30;
 
+  // Category-scoped pages: /radar/ (all), /radar/github/ (links to github.com),
+  // /radar/news/ (aggregator sources like Hacker News and Lobsters). The scope
+  // is applied once at load so search, facets, and counts stay within it.
+  const CATEGORY = app.dataset.category || "all";
+
+  function isGithubUrl(url) {
+    try {
+      const host = new URL(url).hostname.toLowerCase();
+      return host === "github.com" || host.endsWith(".github.com");
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function inCategory(item) {
+    if (CATEGORY === "github") return isGithubUrl(item.url);
+    if (CATEGORY === "news") return item.source_kind === "aggregator";
+    return true;
+  }
+
   let items = [];
   // Computed once after load and reused every render (counts never change).
   let tagFacets = [];
@@ -85,7 +105,7 @@ import { prepare, rank, facets } from "./radar-search.js";
       return response.json();
     })
     .then((data) => {
-      items = (Array.isArray(data) ? data : []).map(prepare);
+      items = (Array.isArray(data) ? data : []).filter(inCategory).map(prepare);
       if (totalCountNode) totalCountNode.textContent = String(items.length);
       indexData();
       updateFromLocation();

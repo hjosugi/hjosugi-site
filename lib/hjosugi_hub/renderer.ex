@@ -31,7 +31,7 @@ defmodule HjosugiHub.Renderer do
     }
 
     write_rendered(out_dir, "index.html", "index.html.eex", assigns)
-    write_rendered(Path.join(out_dir, "radar"), "index.html", "radar.html.eex", assigns)
+    write_radar_pages(out_dir, assigns)
     Store.write_json(Path.join(out_dir, "data/items.json"), public_items)
     Store.write_json(Path.join(out_dir, "data/site.json"), site)
     Store.write_json(Path.join(out_dir, "data/feeds.json"), public_feeds(feeds))
@@ -45,6 +45,23 @@ defmodule HjosugiHub.Renderer do
     end
 
     :ok
+  end
+
+  # The radar is split into category-scoped pages with shared tabs. The full
+  # view lives at /radar/; /radar/github/ and /radar/news/ filter client-side
+  # (by link host and aggregator source kind). `root` is the relative path back
+  # to the site root so assets, data, and tab links resolve from each depth.
+  @radar_pages [
+    {"radar", "all", "../"},
+    {"radar/github", "github", "../../"},
+    {"radar/news", "news", "../../"}
+  ]
+
+  defp write_radar_pages(out_dir, assigns) do
+    Enum.each(@radar_pages, fn {path, category, root} ->
+      scoped = Map.merge(assigns, %{category: category, root: root})
+      write_rendered(Path.join(out_dir, path), "index.html", "radar.html.eex", scoped)
+    end)
   end
 
   defp write_rendered(dir, file, template, assigns) do

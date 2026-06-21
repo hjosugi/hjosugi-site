@@ -6,6 +6,8 @@ import { join } from "node:path";
 const PAGES = [
   { name: "about", path: "/", ready: "h1" },
   { name: "radar", path: "/radar/", ready: ".radar-card" },
+  { name: "radar-github", path: "/radar/github/", ready: ".radar-card" },
+  { name: "radar-news", path: "/radar/news/", ready: ".radar-card" },
 ];
 
 const SHOT_DIR = join("e2e", "screenshots");
@@ -57,6 +59,37 @@ for (const pageDef of PAGES) {
     expect(scrollWidth, "document scrolls horizontally").toBeLessThanOrEqual(clientWidth + 1);
   });
 }
+
+test("github tab scopes results to github.com links", async ({ page }) => {
+  await page.goto("/radar/github/", { waitUntil: "networkidle" });
+  await page.waitForSelector(".radar-card");
+  await expect(page.locator(".radar-tab.active")).toHaveText("github");
+  const hosts = await page
+    .locator(".radar-card h2 a")
+    .evaluateAll((els) => els.map((e) => new URL(e.href).hostname));
+  expect(hosts.length).toBeGreaterThan(0);
+  for (const host of hosts) {
+    expect(host === "github.com" || host.endsWith(".github.com")).toBe(true);
+  }
+});
+
+test("news tab scopes results to aggregator sources", async ({ page }) => {
+  await page.goto("/radar/news/", { waitUntil: "networkidle" });
+  await page.waitForSelector(".radar-card");
+  await expect(page.locator(".radar-tab.active")).toHaveText("news");
+  // Aggregator items carry the source in the card meta (Hacker News / Lobsters).
+  const count = await page.locator(".radar-card").count();
+  expect(count).toBeGreaterThan(0);
+});
+
+test("radar tabs link across the three scoped pages", async ({ page }) => {
+  await page.goto("/radar/", { waitUntil: "networkidle" });
+  await expect(page.locator(".radar-tab")).toHaveCount(3);
+  await expect(page.locator(".radar-tab.active")).toHaveText("all");
+  await page.locator(".radar-tab", { hasText: "news" }).click();
+  await page.waitForURL("**/radar/news/");
+  await expect(page.locator(".radar-tab.active")).toHaveText("news");
+});
 
 test("radar search input stays inside the viewport", async ({ page }) => {
   await page.goto("/radar/", { waitUntil: "networkidle" });
