@@ -1,6 +1,6 @@
-defmodule HjosugiSite do
+defmodule HjosugiHub do
   @moduledoc """
-  Static portfolio and public technical-signal collector.
+  Static portfolio and public technical-radar collector.
 
   The deployed site is static. Mix tasks collect RSS/Atom feeds, write a compact
   JSON index, and export HTML for GitHub Pages.

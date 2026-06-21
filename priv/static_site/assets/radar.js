@@ -1,9 +1,9 @@
 (() => {
-  const app = document.querySelector("[data-signal-app]");
+  const app = document.querySelector("[data-radar-app]");
   if (!app) return;
 
   const form = document.getElementById("static-search-form");
-  const input = document.getElementById("signal-search");
+  const input = document.getElementById("radar-search");
   const resultsNode = app.querySelector("[data-results]");
   const summaryNode = app.querySelector("[data-result-summary]");
   const clearNode = app.querySelector("[data-clear-filters]");
@@ -25,7 +25,7 @@
       updateFromLocation();
     })
     .catch(() => {
-      summaryNode.textContent = "Could not load the static signal index.";
+      summaryNode.textContent = "Could not load the static radar index.";
       resultsNode.replaceChildren(emptyState("!", "The static data file is missing or unavailable."));
     });
 
@@ -134,10 +134,10 @@
 
   function renderCard(item) {
     const article = document.createElement("article");
-    article.className = "signal-card";
+    article.className = "radar-card";
 
     const meta = document.createElement("div");
-    meta.className = "signal-meta";
+    meta.className = "radar-meta";
     meta.append(textSpan(item.source_name || "unknown source"));
     meta.append(textSpan(dateLabel(item)));
     if (item.source_kind) meta.append(textSpan(item.source_kind));
@@ -154,7 +154,7 @@
     summary.textContent = item.summary || "No summary provided by the source.";
 
     const footer = document.createElement("div");
-    footer.className = "signal-footer";
+    footer.className = "radar-footer";
     const chips = document.createElement("div");
     chips.className = "chip-row";
     for (const tag of item.tags || []) {
@@ -189,7 +189,7 @@
     const prompt = document.createElement("span");
     prompt.className = "prompt";
     prompt.textContent = prefix;
-    line.append(prompt, " no matching signals");
+    line.append(prompt, " no matching items");
     const title = document.createElement("h2");
     title.textContent = message;
     box.append(line, title);

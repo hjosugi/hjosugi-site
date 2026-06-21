@@ -1,4 +1,4 @@
-defmodule HjosugiSite.Config do
+defmodule HjosugiHub.Config do
   @moduledoc false
 
   def site(path \\ "config/site.exs"), do: load!(path)

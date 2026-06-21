@@ -3,7 +3,7 @@ defmodule Mix.Tasks.Site.Export do
 
   @shortdoc "Export the static GitHub Pages site"
 
-  alias HjosugiSite.{Config, Renderer, Store}
+  alias HjosugiHub.{Config, Renderer, Store}
 
   @impl true
   def run(args) do

@@ -1,12 +1,12 @@
-defmodule HjosugiSite.StoreTest do
+defmodule HjosugiHub.StoreTest do
   use ExUnit.Case, async: true
 
-  alias HjosugiSite.{Item, Store}
+  alias HjosugiHub.{Item, Store}
 
   test "normalizes cached items from the previous app name" do
-    path = Path.join(System.tmp_dir!(), "hjosugi-site-store-#{System.unique_integer([:positive])}.term")
+    path = Path.join(System.tmp_dir!(), "hjosugi-hub-store-#{System.unique_integer([:positive])}.term")
 
-    previous_struct = String.to_atom("Elixir." <> "Signal" <> "Garden.Item")
+    previous_struct = String.to_atom("Elixir.Legacy.Item")
 
     legacy_items = [
       %{

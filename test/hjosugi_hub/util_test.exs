@@ -1,7 +1,7 @@
-defmodule HjosugiSite.UtilTest do
+defmodule HjosugiHub.UtilTest do
   use ExUnit.Case, async: true
 
-  alias HjosugiSite.Util
+  alias HjosugiHub.Util
 
   test "cleans html and decodes common entities" do
     assert Util.clean_text("<p>A &amp; B</p>") == "A & B"

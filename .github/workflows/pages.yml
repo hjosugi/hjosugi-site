@@ -25,21 +25,21 @@ jobs:
         with:
           otp-version: "27.x"
           elixir-version: "1.18.x"
-      - name: Restore collected signal cache
+      - name: Restore collected radar cache
         uses: actions/cache@v4
         with:
           path: data/items.term
-          key: signal-items-${{ github.run_id }}
+          key: hub-items-${{ github.run_id }}
           restore-keys: |
-            signal-items-
+            hub-items-
       - name: Collect public feeds
-        run: mix site.collect --timeout 20000 --workers 6 --max-items 1000
+        run: mix hub.collect --timeout 20000 --workers 6 --max-items 1000
       - id: pages
         uses: actions/configure-pages@v5
         with:
           enablement: true
       - name: Export static site
-        run: mix site.export --out public --base-url "${{ steps.pages.outputs.base_url }}"
+        run: mix hub.export --out public --base-url "${{ steps.pages.outputs.base_url }}"
       - uses: actions/upload-pages-artifact@v3
         with:
           path: public

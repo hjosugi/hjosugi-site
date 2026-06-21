@@ -1,4 +1,4 @@
-defmodule HjosugiSite.HTML do
+defmodule HjosugiHub.HTML do
   @moduledoc false
 
   def escape(nil), do: ""

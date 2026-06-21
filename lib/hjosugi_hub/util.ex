@@ -1,4 +1,4 @@
-defmodule HjosugiSite.Util do
+defmodule HjosugiHub.Util do
   @moduledoc false
 
   @tag_trim ~r/[-\/#]+$/u

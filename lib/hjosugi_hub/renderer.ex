@@ -1,7 +1,7 @@
-defmodule HjosugiSite.Renderer do
+defmodule HjosugiHub.Renderer do
   @moduledoc false
 
-  alias HjosugiSite.{Config, Store}
+  alias HjosugiHub.{Config, Store}
 
   @template_dir Path.expand("../../priv/static_site/templates", __DIR__)
   @asset_dir Path.expand("../../priv/static_site/assets", __DIR__)
@@ -24,7 +24,7 @@ defmodule HjosugiSite.Renderer do
     }
 
     write_rendered(out_dir, "index.html", "index.html.eex", assigns)
-    write_rendered(Path.join(out_dir, "signals"), "index.html", "signals.html.eex", assigns)
+    write_rendered(Path.join(out_dir, "radar"), "index.html", "radar.html.eex", assigns)
     Store.write_json(Path.join(out_dir, "data/items.json"), public_items)
     Store.write_json(Path.join(out_dir, "data/site.json"), site)
     Store.write_json(Path.join(out_dir, "data/feeds.json"), public_feeds(feeds))
@@ -69,7 +69,7 @@ defmodule HjosugiSite.Renderer do
     <?xml version="1.0" encoding="UTF-8"?>
     <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
       <url><loc>#{base_url}/</loc></url>
-      <url><loc>#{base_url}/signals/</loc></url>
+      <url><loc>#{base_url}/radar/</loc></url>
     </urlset>
     """
     |> String.trim_leading()

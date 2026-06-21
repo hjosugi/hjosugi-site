@@ -112,7 +112,7 @@ h1 { font-size: clamp(3rem, 9vw, 7.4rem); margin: 0; max-width: 13ch; }
 
 .section { padding: 82px 0; border-top: 1px solid rgba(36, 68, 58, 0.7); }
 .section-heading { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 40px; align-items: end; margin-bottom: 28px; }
-.section-heading h2, .split-section h2, .signal-callout h2 { margin: 0; font-size: clamp(2rem, 5vw, 3.7rem); }
+.section-heading h2, .split-section h2, .radar-callout h2 { margin: 0; font-size: clamp(2rem, 5vw, 3.7rem); }
 .section-heading > p { color: var(--muted); margin: 0; }
 .project-grid { display: grid; gap: 16px; }
 .featured-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -144,9 +144,9 @@ h1 { font-size: clamp(3rem, 9vw, 7.4rem); margin: 0; max-width: 13ch; }
 .skill-group:first-child { border-top: 0; }
 .skill-group h3 { margin: 0 0 5px; color: var(--accent); font-size: 0.9rem; }
 .skill-group p { margin: 0; color: var(--muted); }
-.signal-callout { display: flex; justify-content: space-between; align-items: end; gap: 48px; }
-.signal-callout > div { max-width: 780px; }
-.signal-callout p:last-child { color: var(--muted); }
+.radar-callout { display: flex; justify-content: space-between; align-items: end; gap: 48px; }
+.radar-callout > div { max-width: 780px; }
+.radar-callout p:last-child { color: var(--muted); }
 
 .inbox-shell { padding: 58px 0 96px; }
 .inbox-header { display: flex; justify-content: space-between; align-items: end; gap: 24px; }
@@ -175,13 +175,13 @@ h1 { font-size: clamp(3rem, 9vw, 7.4rem); margin: 0; max-width: 13ch; }
 .filter-link:hover, .filter-link.active { color: var(--text); background: var(--panel-2); }
 .filter-link b { font-weight: 500; color: var(--accent); }
 .results-topline { display: flex; justify-content: space-between; color: var(--muted); font-size: 0.82rem; margin-bottom: 10px; }
-.signal-card { border-top: 1px solid var(--line); padding: 24px 2px; }
-.signal-card:first-of-type { border-top: 0; }
-.signal-card h2 { margin: 8px 0 10px; font-size: clamp(1.25rem, 3vw, 1.75rem); }
-.signal-card h2 a { text-decoration: none; }
-.signal-card > p { color: var(--muted); margin: 0 0 16px; }
-.signal-meta { display: flex; flex-wrap: wrap; gap: 8px 16px; color: var(--accent-2); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; }
-.signal-footer { display: flex; justify-content: space-between; align-items: end; gap: 18px; color: var(--muted); font-size: 0.76rem; }
+.radar-card { border-top: 1px solid var(--line); padding: 24px 2px; }
+.radar-card:first-of-type { border-top: 0; }
+.radar-card h2 { margin: 8px 0 10px; font-size: clamp(1.25rem, 3vw, 1.75rem); }
+.radar-card h2 a { text-decoration: none; }
+.radar-card > p { color: var(--muted); margin: 0 0 16px; }
+.radar-meta { display: flex; flex-wrap: wrap; gap: 8px 16px; color: var(--accent-2); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.radar-footer { display: flex; justify-content: space-between; align-items: end; gap: 18px; color: var(--muted); font-size: 0.76rem; }
 .empty-state { border: 1px dashed var(--line); border-radius: var(--radius); padding: 42px; text-align: center; }
 kbd { border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 1px 5px; color: var(--text); background: var(--panel); }
 
@@ -207,7 +207,7 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4p
   .status-strip div:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
   .section-heading, .split-section { grid-template-columns: 1fr; gap: 18px; }
   .featured-grid, .compact-grid { grid-template-columns: 1fr; }
-  .signal-callout, .inbox-header { align-items: start; flex-direction: column; }
+  .radar-callout, .inbox-header { align-items: start; flex-direction: column; }
   .inbox-layout { grid-template-columns: 1fr; }
   .filter-panel { position: static; max-height: none; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
   .filter-section + .filter-section { margin-top: 0; }
@@ -223,7 +223,7 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4p
   .search-row { grid-template-columns: auto 1fr; }
   .search-row .primary-button { grid-column: 1 / -1; margin-top: 5px; }
   .filter-panel { grid-template-columns: 1fr; }
-  .signal-footer { align-items: start; flex-direction: column; }
+  .radar-footer { align-items: start; flex-direction: column; }
   .footer-grid { align-items: start; flex-direction: column; justify-content: center; }
 }
 

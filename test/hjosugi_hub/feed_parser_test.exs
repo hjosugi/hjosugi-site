@@ -1,7 +1,7 @@
-defmodule HjosugiSite.FeedParserTest do
+defmodule HjosugiHub.FeedParserTest do
   use ExUnit.Case, async: true
 
-  alias HjosugiSite.FeedParser
+  alias HjosugiHub.FeedParser
 
   test "parses RSS items into normalized items" do
     feed = %{id: "sample", name: "Sample Feed", url: "https://example.com/feed.xml", kind: "rss", tags: ["sample"]}

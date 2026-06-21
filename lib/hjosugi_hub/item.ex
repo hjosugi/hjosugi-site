@@ -1,4 +1,4 @@
-defmodule HjosugiSite.Item do
+defmodule HjosugiHub.Item do
   @moduledoc false
 
   defstruct [

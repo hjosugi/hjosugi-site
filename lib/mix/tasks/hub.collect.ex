@@ -3,7 +3,7 @@ defmodule Mix.Tasks.Site.Collect do
 
   @shortdoc "Collect RSS/Atom feeds into data/items.term and data/items.json"
 
-  alias HjosugiSite.{Collector, Config, Store}
+  alias HjosugiHub.{Collector, Config, Store}
 
   @impl true
   def run(args) do

@@ -1,7 +1,7 @@
-defmodule HjosugiSite.Store do
+defmodule HjosugiHub.Store do
   @moduledoc false
 
-  alias HjosugiSite.{Item, JSON, Util}
+  alias HjosugiHub.{Item, JSON, Util}
 
   def read_items(path) do
     if File.exists?(path) do

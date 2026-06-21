@@ -1,4 +1,4 @@
-<% alias HjosugiSite.HTML %>
+<% alias HjosugiHub.HTML %>
 <!doctype html>
 <html lang="en">
 <head>
@@ -16,7 +16,7 @@
     <a class="brand" href="./" aria-label="Home"><span class="prompt">~/</span><%= HTML.escape(@site.handle) %></a>
     <nav aria-label="Primary navigation">
       <a class="nav-link active" href="./">about</a>
-      <a class="nav-link" href="signals/">signals</a>
+      <a class="nav-link" href="radar/">radar</a>
       <%= for link <- @site.links do %><a class="nav-link" href="<%= HTML.escape(link.url) %>" rel="me noopener" target="_blank"><%= HTML.escape(String.downcase(link.label)) %></a><% end %>
     </nav>
     <button class="ghost-button" id="crt-toggle" type="button" aria-pressed="true">crt:on</button>
@@ -34,7 +34,7 @@
     <p class="lede"><%= HTML.escape(@site.about) %></p>
     <div class="hero-actions">
       <a class="primary-button" href="#projects">view selected work</a>
-      <a class="secondary-button" href="signals/">open signal radar</a>
+      <a class="secondary-button" href="radar/">open technical radar</a>
     </div>
     <dl class="status-strip" aria-label="Site status">
       <div><dt>location</dt><dd><%= HTML.escape(@site.location) %></dd></div>
@@ -94,13 +94,13 @@
     </div>
   </section>
 
-  <section class="shell section signal-callout">
+  <section class="shell section radar-callout">
     <div>
-      <p class="terminal-line"><span class="prompt">$</span> mix site.collect</p>
+      <p class="terminal-line"><span class="prompt">$</span> mix hub.collect</p>
       <h2>A public radar for technical change</h2>
-      <p>The signal page is rebuilt from RSS, Atom, and YouTube feeds by GitHub Actions. It stays cheap because the deployed site is static.</p>
+      <p>The radar page is rebuilt from RSS, Atom, and YouTube feeds by GitHub Actions. It stays cheap because the deployed site is static.</p>
     </div>
-    <a class="primary-button" href="signals/">open signals</a>
+    <a class="primary-button" href="radar/">open radar</a>
   </section>
 </main>
 <footer class="site-footer">

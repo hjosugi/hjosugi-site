@@ -1,7 +1,7 @@
-defmodule HjosugiSite.TaggerTest do
+defmodule HjosugiHub.TaggerTest do
   use ExUnit.Case, async: true
 
-  alias HjosugiSite.Tagger
+  alias HjosugiHub.Tagger
 
   test "adds deterministic tags from title and content" do
     tags = Tagger.apply("Vector database platform", "RAG embeddings with PostgreSQL", ["seed"])

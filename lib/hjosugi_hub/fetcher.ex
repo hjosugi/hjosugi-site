@@ -1,7 +1,7 @@
-defmodule HjosugiSite.Fetcher do
+defmodule HjosugiHub.Fetcher do
   @moduledoc false
 
-  alias HjosugiSite.FeedParser
+  alias HjosugiHub.FeedParser
 
   @max_feed_bytes 5 * 1024 * 1024
 
@@ -50,7 +50,7 @@ defmodule HjosugiSite.Fetcher do
 
   defp headers do
     [
-      {~c"user-agent", ~c"hjosugi-site/0.2 (+https://github.com/hjosugi/hjosugi-site)"},
+      {~c"user-agent", ~c"hjosugi-hub/0.2 (+https://github.com/hjosugi/hjosugi-hub)"},
       {~c"accept", ~c"application/atom+xml, application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.1"}
     ]
   end

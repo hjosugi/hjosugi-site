@@ -1,4 +1,4 @@
-# Hjosugi Site
+# Hjosugi Hub
 
 自己紹介ポートフォリオと、技術情報収集・検索ページを1つにしたElixirプロジェクトです。
 公開先はGitHub Pagesを想定しており、常時起動サーバーなしで安く運用できます。
@@ -7,11 +7,11 @@
 
 ```bash
 mix test
-mix site.collect
-mix site.export --out public
+mix hub.collect
+mix hub.export --out public
 ```
 
-生成後、`public/index.html` が自己紹介ページ、`public/signals/index.html` が情報収集ページです。
+生成後、`public/index.html` が自己紹介ページ、`public/radar/index.html` が情報収集ページです。
 情報収集ページはJSONを `fetch()` するため、ローカル確認時は `public/` をHTTPで配信してください。
 
 ## 現在できること

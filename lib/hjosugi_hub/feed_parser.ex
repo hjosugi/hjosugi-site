@@ -1,7 +1,7 @@
-defmodule HjosugiSite.FeedParser do
+defmodule HjosugiHub.FeedParser do
   @moduledoc false
 
-  alias HjosugiSite.{Item, Tagger, Util}
+  alias HjosugiHub.{Item, Tagger, Util}
 
   def parse(body, feed, now \\ DateTime.utc_now()) do
     xml = to_string(body)

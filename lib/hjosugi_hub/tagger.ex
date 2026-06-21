@@ -1,7 +1,7 @@
-defmodule HjosugiSite.Tagger do
+defmodule HjosugiHub.Tagger do
   @moduledoc false
 
-  alias HjosugiSite.Util
+  alias HjosugiHub.Util
 
   @rules [
     {"google-cloud", ["google cloud", "gcp", "bigquery", "cloud run", "spanner", "vertex ai"]},
