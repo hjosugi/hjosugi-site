@@ -12,12 +12,38 @@
   const savedFacetsNode = app.querySelector("[data-saved-facets]");
   const totalCountNode = app.querySelector("[data-total-count]");
   const suggestNode = document.getElementById("search-suggest");
-  let items = [];
 
   const collator = new Intl.Collator(undefined, { sensitivity: "base" });
 
   // The landing view shows only the last N days; search opens the full archive.
   const RECENT_DAYS = 30;
+
+  let items = [];
+  // Computed once after load and reused every render (counts never change).
+  let tagFacets = [];
+  let sourceFacets = [];
+  let uniqueTags = [];
+  let uniqueSources = [];
+
+  // --- text + value helpers ---------------------------------------------
+
+  const norm = (value) => String(value || "").trim().toLowerCase();
+  const same = (a, b) => norm(a) === norm(b);
+  const tokens = (value) => norm(value).split(/[^a-z0-9_.+#-]+/).filter(Boolean);
+
+  function parseTs(value) {
+    const ts = Date.parse(value || "");
+    return Number.isFinite(ts) ? ts : 0;
+  }
+
+  function safeURL(value) {
+    try {
+      const url = new URL(value, location.href);
+      return url.protocol === "http:" || url.protocol === "https:" ? url.href : "#";
+    } catch (_) {
+      return "#";
+    }
+  }
 
   // --- DOM helpers -------------------------------------------------------
 
@@ -49,6 +75,39 @@
       event.preventDefault();
       navigate(params);
     };
+  }
+
+  // --- search index ------------------------------------------------------
+
+  // Normalized text, a timestamp, and a static base score are computed up front,
+  // so ranking on each keystroke is plain string/number comparison instead of
+  // re-lowercasing long article bodies or re-parsing dates for every item.
+  function prepare(item) {
+    const ts = parseTs(item.published_at || item.collected_at);
+    item._ts = ts;
+    item._date = ts ? new Date(ts).toISOString().slice(0, 10) : "unknown";
+    item._base = baseScore(ts, item.weight, item.score);
+    item._srcId = norm(item.source_id);
+    item._s = {
+      t: norm(item.title),
+      tags: norm((item.tags || []).join(" ")),
+      src: norm(item.source_name),
+      body: norm([item.summary, item.content, item.author].filter(Boolean).join(" ")),
+    };
+    return item;
+  }
+
+  function indexData() {
+    const tags = new Set();
+    const sources = new Set();
+    for (const item of items) {
+      if (item.source_name) sources.add(item.source_name);
+      for (const tag of item.tags || []) tags.add(tag);
+    }
+    uniqueTags = [...tags].sort((a, b) => collator.compare(a, b));
+    uniqueSources = [...sources].sort((a, b) => collator.compare(a, b));
+    tagFacets = facets(items, "tags");
+    sourceFacets = facets(items, "source_name");
   }
 
   // --- saved (localStorage) ---------------------------------------------
@@ -91,9 +150,9 @@
       return response.json();
     })
     .then((data) => {
-      items = Array.isArray(data) ? data : [];
+      items = (Array.isArray(data) ? data : []).map(prepare);
       if (totalCountNode) totalCountNode.textContent = String(items.length);
-      indexSuggestions();
+      indexData();
       updateFromLocation();
     })
     .catch(() => {
@@ -134,11 +193,16 @@
     // opens up the whole archive.
     const defaultView = !query && !tag && !source && !onlySaved;
     const cutoff = Date.now() - RECENT_DAYS * 86400000;
-    const ranked = rank(items, query)
-      .filter((item) => !onlySaved || isSaved(item))
-      .filter((item) => !tag || item.tags?.some((value) => same(value, tag)))
-      .filter((item) => !source || same(item.source_name, source) || same(item.source_id, source))
-      .filter((item) => !defaultView || dateValue(item) >= cutoff);
+    const tagN = norm(tag);
+    const sourceN = norm(source);
+
+    const ranked = rank(items, query).filter((item) => {
+      if (onlySaved && !isSaved(item)) return false;
+      if (tagN && !(item.tags || []).some((value) => norm(value) === tagN)) return false;
+      if (sourceN && item._s.src !== sourceN && item._srcId !== sourceN) return false;
+      if (defaultView && item._ts < cutoff) return false;
+      return true;
+    });
     const visible = ranked.slice(0, 80);
 
     summaryNode.textContent = defaultView
@@ -148,8 +212,8 @@
     clearNode.onclick = onNavigate(new URLSearchParams());
 
     renderSavedFacet(savedFacetsNode, items.filter(isSaved).length, onlySaved, params);
-    renderFacets(tagFacetsNode, facets(items, "tags"), "tag", tag, params);
-    renderFacets(sourceFacetsNode, facets(items, "source_name"), "source", source, params);
+    renderFacets(tagFacetsNode, tagFacets, "tag", tag, params);
+    renderFacets(sourceFacetsNode, sourceFacets, "source", source, params);
 
     if (visible.length === 0) {
       const message = defaultView
@@ -163,23 +227,170 @@
     resultsNode.replaceChildren(...visible.map(renderCard));
   }
 
+  // --- ranking -----------------------------------------------------------
+
+  // Field weights for a matched term and for the whole-query phrase. Keys map to
+  // the precomputed item._s fields; the entry lists are hoisted out of the loop.
+  const TERM_WEIGHTS = { t: 7, tags: 5, src: 3, body: 1 };
+  const PHRASE_WEIGHTS = { t: 6, tags: 4, src: 3, body: 2 };
+  const TERM_ENTRIES = Object.entries(TERM_WEIGHTS);
+  const PHRASE_ENTRIES = Object.entries(PHRASE_WEIGHTS);
+
+  // Default ordering when nothing is searched: recency biased by source weight,
+  // plus a popularity nudge from crowd-vote scores (e.g. Hacker News points).
+  function baseScore(ts, weight, points) {
+    const recency = Math.max(0, ts / 1e13);
+    const w = Number(weight) || 1;
+    const popularity = points > 0 ? Math.min(1.5, Math.log10(points + 1) / 2) : 0;
+    return recency * w + popularity;
+  }
+
+  function rank(values, query) {
+    const terms = tokens(query);
+    const phrase = norm(query);
+    if (terms.length === 0 && !phrase) {
+      return [...values].sort((a, b) => b._base - a._base || b._ts - a._ts);
+    }
+    return [...values]
+      .map((item) => ({ item, value: score(item, terms, phrase) }))
+      .sort((a, b) => b.value - a.value || b.item._ts - a.item._ts)
+      .map((entry) => entry.item);
+  }
+
+  function score(item, terms, phrase) {
+    const s = item._s;
+    let value = 0;
+    for (const term of terms) {
+      if (s.t === term) value += 12;
+      for (const [field, weight] of TERM_ENTRIES) {
+        if (s[field].includes(term)) value += weight;
+      }
+    }
+    if (phrase) {
+      for (const [field, weight] of PHRASE_ENTRIES) {
+        if (s[field].includes(phrase)) value += weight;
+      }
+    }
+    return value + item._base;
+  }
+
+  // --- facets ------------------------------------------------------------
+
+  function renderSavedFacet(node, count, active, baseParams) {
+    if (!node) return;
+    node.replaceChildren(
+      facetLink("all", "", "saved", !active, baseParams, 0),
+      facetLink("★ saved", "1", "saved", active, baseParams, count)
+    );
+  }
+
+  function renderFacets(node, entries, key, activeValue, baseParams) {
+    const links = entries
+      .slice(0, 28)
+      .map((entry) => facetLink(entry.name, entry.name, key, same(activeValue, entry.name), baseParams, entry.count));
+    node.replaceChildren(facetLink("all", "", key, activeValue === "", baseParams, 0), ...links);
+  }
+
+  function facetLink(label, value, key, active, baseParams, count) {
+    const params = withParam(baseParams, key, value);
+    const link = el(
+      "a",
+      { class: "filter-link" + (active ? " active" : ""), href: "?" + params.toString() },
+      el("span", { text: label })
+    );
+    link.addEventListener("click", onNavigate(params));
+    if (count > 0) link.append(el("b", { text: String(count) }));
+    return link;
+  }
+
+  function facets(values, field) {
+    const counts = new Map();
+    for (const item of values) {
+      const entries = field === "tags" ? item.tags || [] : [item[field]].filter(Boolean);
+      for (const entry of entries) counts.set(entry, (counts.get(entry) || 0) + 1);
+    }
+    return [...counts.entries()]
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count || collator.compare(a.name, b.name));
+  }
+
+  // --- cards -------------------------------------------------------------
+
+  function renderCard(item) {
+    const meta = el("div", { class: "radar-meta" }, [
+      el("span", { text: item.source_name || "unknown source" }),
+      el("span", { text: item._date }),
+      item.source_kind ? el("span", { text: item.source_kind }) : null,
+      item.score > 0 ? el("span", { class: "radar-score", text: "▲ " + item.score }) : null,
+      saveButton(item),
+    ]);
+
+    const title = el(
+      "h2",
+      {},
+      el("a", {
+        href: safeURL(item.url),
+        target: "_blank",
+        rel: "noopener noreferrer",
+        text: item.title || "Untitled",
+      })
+    );
+
+    const summary = el("p", { text: item.summary || "No summary provided by the source." });
+
+    const footer = el("div", { class: "radar-footer" }, [
+      el("div", { class: "chip-row" }, (item.tags || []).map(tagChip)),
+      item.author ? el("span", { text: "by " + item.author }) : null,
+    ]);
+
+    return el("article", { class: "radar-card" }, [meta, title, summary, footer]);
+  }
+
+  function tagChip(tag) {
+    const params = withParam(currentParams(), "tag", tag);
+    const chip = el("a", { class: "chip link-chip", href: "?" + params.toString(), text: tag });
+    chip.addEventListener("click", onNavigate(params));
+    return chip;
+  }
+
+  function saveButton(item) {
+    const active = isSaved(item);
+    const button = el("button", {
+      type: "button",
+      class: "save-btn" + (active ? " saved" : ""),
+      text: active ? "★ saved" : "☆ save",
+      "aria-pressed": String(active),
+      title: active ? "remove from saved" : "save to this browser",
+    });
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      toggleSaved(item);
+    });
+    return button;
+  }
+
+  function emptyState(prefix, message) {
+    const line = el("p", { class: "terminal-line" }, [
+      el("span", { class: "prompt", text: prefix }),
+      " no matching items",
+    ]);
+    return el("div", { class: "empty-state" }, [line, el("h2", { text: message })]);
+  }
+
+  function summaryText(visible, total, query, tag, source, onlySaved) {
+    const parts = [];
+    if (onlySaved) parts.push("saved");
+    if (query) parts.push('query "' + query + '"');
+    if (tag) parts.push("tag " + tag);
+    if (source) parts.push("source " + source);
+    const scope = parts.length ? " for " + parts.join(", ") : "";
+    return visible + " shown / " + total + " matches" + scope;
+  }
+
   // --- autocomplete ------------------------------------------------------
 
-  let uniqueTags = [];
-  let uniqueSources = [];
   let suggestions = [];
   let activeIndex = -1;
-
-  function indexSuggestions() {
-    const tags = new Set();
-    const sources = new Set();
-    for (const item of items) {
-      if (item.source_name) sources.add(item.source_name);
-      for (const tag of item.tags || []) tags.add(tag);
-    }
-    uniqueTags = [...tags].sort((a, b) => collator.compare(a, b));
-    uniqueSources = [...sources].sort((a, b) => collator.compare(a, b));
-  }
 
   function computeSuggestions(value) {
     const q = norm(value);
@@ -192,7 +403,7 @@
       .filter((s) => norm(s).includes(q))
       .slice(0, 3)
       .map((s) => ({ kind: "source", label: s }));
-    const titleHits = rank(items.filter((i) => norm(i.title).includes(q)), value)
+    const titleHits = rank(items.filter((i) => i._s.t.includes(q)), value)
       .slice(0, 6)
       .map((i) => ({ kind: "item", label: i.title || "Untitled", item: i }));
     return [...tagHits, ...sourceHits, ...titleHits].slice(0, 12);
@@ -281,191 +492,5 @@
     });
 
     input.addEventListener("blur", () => window.setTimeout(closeSuggest, 120));
-  }
-
-  function rank(values, query) {
-    const terms = tokens(query);
-    return [...values]
-      .map((item) => ({ item, score: score(item, terms, query) }))
-      .sort((a, b) => b.score - a.score || dateValue(b.item) - dateValue(a.item))
-      .map((entry) => entry.item);
-  }
-
-  // Field weights for a matched term and for the whole-query phrase.
-  const TERM_WEIGHTS = { title: 7, tags: 5, source: 3, body: 1 };
-  const PHRASE_WEIGHTS = { title: 6, tags: 4, source: 3, body: 2 };
-
-  // Default ordering when nothing is searched: recency biased by source weight,
-  // plus a popularity nudge from crowd-vote scores (e.g. Hacker News points).
-  function baseScore(item) {
-    const recency = Math.max(0, dateValue(item) / 1e13);
-    const weight = Number(item.weight) || 1;
-    const popularity = item.score > 0 ? Math.min(1.5, Math.log10(item.score + 1) / 2) : 0;
-    return recency * weight + popularity;
-  }
-
-  function score(item, terms, query) {
-    const base = baseScore(item);
-    const phrase = norm(query);
-    if (terms.length === 0 && !phrase) return base;
-
-    const fields = {
-      title: norm(item.title),
-      tags: norm((item.tags || []).join(" ")),
-      source: norm(item.source_name),
-      body: norm([item.summary, item.content, item.author].filter(Boolean).join(" ")),
-    };
-
-    let value = 0;
-    for (const term of terms) {
-      if (fields.title === term) value += 12;
-      for (const [field, weight] of Object.entries(TERM_WEIGHTS)) {
-        if (fields[field].includes(term)) value += weight;
-      }
-    }
-    if (phrase) {
-      for (const [field, weight] of Object.entries(PHRASE_WEIGHTS)) {
-        if (fields[field].includes(phrase)) value += weight;
-      }
-    }
-    return value + base;
-  }
-
-  // --- facets ------------------------------------------------------------
-
-  function renderSavedFacet(node, count, active, baseParams) {
-    if (!node) return;
-    node.replaceChildren(
-      facetLink("all", "", "saved", !active, baseParams, 0),
-      facetLink("★ saved", "1", "saved", active, baseParams, count)
-    );
-  }
-
-  function renderFacets(node, entries, key, activeValue, baseParams) {
-    const links = entries
-      .slice(0, 28)
-      .map((entry) => facetLink(entry.name, entry.name, key, same(activeValue, entry.name), baseParams, entry.count));
-    node.replaceChildren(facetLink("all", "", key, activeValue === "", baseParams, 0), ...links);
-  }
-
-  function facetLink(label, value, key, active, baseParams, count) {
-    const params = withParam(baseParams, key, value);
-    const link = el(
-      "a",
-      { class: "filter-link" + (active ? " active" : ""), href: "?" + params.toString() },
-      el("span", { text: label })
-    );
-    link.addEventListener("click", onNavigate(params));
-    if (count > 0) link.append(el("b", { text: String(count) }));
-    return link;
-  }
-
-  function facets(values, field) {
-    const counts = new Map();
-    for (const item of values) {
-      const entries = field === "tags" ? item.tags || [] : [item[field]].filter(Boolean);
-      for (const entry of entries) counts.set(entry, (counts.get(entry) || 0) + 1);
-    }
-    return [...counts.entries()]
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count || collator.compare(a.name, b.name));
-  }
-
-  // --- cards -------------------------------------------------------------
-
-  function renderCard(item) {
-    const meta = el("div", { class: "radar-meta" }, [
-      el("span", { text: item.source_name || "unknown source" }),
-      el("span", { text: dateLabel(item) }),
-      item.source_kind ? el("span", { text: item.source_kind }) : null,
-      item.score > 0 ? el("span", { class: "radar-score", text: "▲ " + item.score }) : null,
-      saveButton(item),
-    ]);
-
-    const title = el(
-      "h2",
-      {},
-      el("a", {
-        href: safeURL(item.url),
-        target: "_blank",
-        rel: "noopener noreferrer",
-        text: item.title || "Untitled",
-      })
-    );
-
-    const summary = el("p", { text: item.summary || "No summary provided by the source." });
-
-    const footer = el("div", { class: "radar-footer" }, [
-      el("div", { class: "chip-row" }, (item.tags || []).map(tagChip)),
-      item.author ? el("span", { text: "by " + item.author }) : null,
-    ]);
-
-    return el("article", { class: "radar-card" }, [meta, title, summary, footer]);
-  }
-
-  function tagChip(tag) {
-    const params = withParam(currentParams(), "tag", tag);
-    const chip = el("a", { class: "chip link-chip", href: "?" + params.toString(), text: tag });
-    chip.addEventListener("click", onNavigate(params));
-    return chip;
-  }
-
-  function saveButton(item) {
-    const active = isSaved(item);
-    const button = el("button", {
-      type: "button",
-      class: "save-btn" + (active ? " saved" : ""),
-      text: active ? "★ saved" : "☆ save",
-      "aria-pressed": String(active),
-      title: active ? "remove from saved" : "save to this browser",
-    });
-    button.addEventListener("click", (event) => {
-      event.preventDefault();
-      toggleSaved(item);
-    });
-    return button;
-  }
-
-  function emptyState(prefix, message) {
-    const line = el("p", { class: "terminal-line" }, [
-      el("span", { class: "prompt", text: prefix }),
-      " no matching items",
-    ]);
-    return el("div", { class: "empty-state" }, [line, el("h2", { text: message })]);
-  }
-
-  // --- text + value helpers ---------------------------------------------
-
-  function summaryText(visible, total, query, tag, source, onlySaved) {
-    const parts = [];
-    if (onlySaved) parts.push("saved");
-    if (query) parts.push('query "' + query + '"');
-    if (tag) parts.push("tag " + tag);
-    if (source) parts.push("source " + source);
-    const scope = parts.length ? " for " + parts.join(", ") : "";
-    return visible + " shown / " + total + " matches" + scope;
-  }
-
-  const tokens = (value) => norm(value).split(/[^a-z0-9_.+#-]+/).filter(Boolean);
-  const norm = (value) => String(value || "").trim().toLowerCase();
-  const same = (a, b) => norm(a) === norm(b);
-
-  function dateValue(item) {
-    const value = Date.parse(item.published_at || item.collected_at || "");
-    return Number.isFinite(value) ? value : 0;
-  }
-
-  function dateLabel(item) {
-    const value = dateValue(item);
-    return value ? new Date(value).toISOString().slice(0, 10) : "unknown";
-  }
-
-  function safeURL(value) {
-    try {
-      const url = new URL(value, location.href);
-      return url.protocol === "http:" || url.protocol === "https:" ? url.href : "#";
-    } catch (_) {
-      return "#";
-    }
   }
 })();
