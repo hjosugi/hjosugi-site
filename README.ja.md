@@ -14,14 +14,6 @@ mix hub.export --out public
 生成後、`public/index.html` が自己紹介ページ、`public/radar/index.html` が情報収集ページです。
 情報収集ページはJSONを `fetch()` するため、ローカル確認時は `public/` をHTTPで配信してください。
 
-例:
-
-```bash
-python3 -m http.server 4000 --directory public
-```
-
-その後、`http://localhost:4000/` を開きます。
-
 ## 現在できること
 
 - RSS / Atom / YouTube RSSの収集

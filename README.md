@@ -20,14 +20,6 @@ Open `public/index.html` for the portfolio and `public/radar/index.html` for
 the searchable radar index. For the radar page, serve `public/` over HTTP so
 browser `fetch()` can load `data/items.json`.
 
-For example:
-
-```bash
-python3 -m http.server 4000 --directory public
-```
-
-Then open `http://localhost:4000/`.
-
 ## Configuration
 
 - `config/site.exs`: profile, links, skills, and selected projects

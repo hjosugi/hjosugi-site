@@ -1,7 +1,7 @@
 %{
   handle: "hjosugi",
   display_name: "hjosugi",
-  headline: "Quietly building small backend and frontend things, mostly for fun",
+  headline: "A software engineer in Japan",
   location: "Tokyo, Japan",
   availability: "Just tinkering — a small corner of the internet",
   about:
