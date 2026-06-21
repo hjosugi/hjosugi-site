@@ -48,7 +48,10 @@ defmodule HjosugiHub.Store do
         content: empty_to_nil(item.content),
         published_at: item.published_at,
         collected_at: item.collected_at,
-        score: item.score,
+        # Map.get, not item.score: hub.collect calls public_items/1 directly on
+        # freshly merged items, which can include a struct deserialized from the
+        # cache before :score existed. Dot access would raise KeyError there.
+        score: Map.get(item, :score),
         tags: item.tags
       }
     end)

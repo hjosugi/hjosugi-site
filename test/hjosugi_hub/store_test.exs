@@ -66,4 +66,29 @@ defmodule HjosugiHub.StoreTest do
 
     File.rm(path)
   end
+
+  test "public_items/1 tolerates a struct missing :score without crashing" do
+    # Reproduces the hub.collect crash: public_items is called directly on
+    # merged items (not via read_items), so a struct deserialized from the
+    # cache before :score existed reaches it without normalization.
+    stale =
+      %{
+        __struct__: Item,
+        id: "stale-1",
+        source_id: "hacker-news",
+        source_name: "Hacker News Front Page",
+        source_kind: "aggregator",
+        title: "stale item",
+        url: "https://github.com/owner/repo",
+        author: "someone",
+        summary: "summary",
+        content: "content",
+        published_at: ~U[2026-06-21 00:00:00Z],
+        collected_at: ~U[2026-06-21 01:31:00Z],
+        tags: ["aggregator"]
+      }
+
+    refute Map.has_key?(stale, :score)
+    assert [%{id: "stale-1", score: nil}] = Store.public_items([stale])
+  end
 end
