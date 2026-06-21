@@ -35,4 +35,35 @@ defmodule HjosugiHub.StoreTest do
 
     File.rm(path)
   end
+
+  test "reads cached items serialized before :score existed without crashing" do
+    path =
+      Path.join(System.tmp_dir!(), "hjosugi-hub-store-#{System.unique_integer([:positive])}.term")
+
+    # A HjosugiHub.Item struct as serialized before the :score field was added.
+    legacy_item =
+      %{
+        __struct__: Item,
+        id: "old-1",
+        source_id: "hacker-news",
+        source_name: "Hacker News",
+        source_kind: "aggregator",
+        title: "Cached HN item",
+        url: "https://example.com/item",
+        author: "someone",
+        summary: "summary",
+        content: "content",
+        published_at: ~U[2026-06-20 12:00:00Z],
+        collected_at: ~U[2026-06-21 00:00:00Z],
+        tags: ["aggregator"]
+      }
+
+    File.write!(path, :erlang.term_to_binary([legacy_item]))
+
+    items = Store.read_items(path)
+    assert [%Item{score: nil}] = items
+    assert [%{score: nil}] = Store.public_items(items)
+
+    File.rm(path)
+  end
 end

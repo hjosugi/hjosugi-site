@@ -61,8 +61,8 @@ defmodule HjosugiHub.Store do
   defp normalize_items(items) when is_list(items), do: Enum.map(items, &normalize_item/1)
   defp normalize_items(_items), do: []
 
-  defp normalize_item(%Item{} = item), do: item
-
+  # Rebuild every cached item through the current struct so fields added after it
+  # was serialized (e.g. :score) get their defaults instead of missing keys.
   defp normalize_item(%{} = item) do
     %Item{
       id: Map.get(item, :id),
