@@ -36,7 +36,7 @@ defmodule HjosugiHub.Renderer do
     write_radar_pages(out_dir, assigns)
 
     write_rendered(
-      Path.join(out_dir, "gallery"),
+      Path.join(out_dir, "friends"),
       "index.html",
       "gallery.html.eex",
       Map.put(assigns, :root, "../")
@@ -136,7 +136,7 @@ defmodule HjosugiHub.Renderer do
       <url><loc>#{base_url}/</loc></url>
       <url><loc>#{base_url}/radar/</loc></url>
       <url><loc>#{base_url}/popular/</loc></url>
-      <url><loc>#{base_url}/gallery/</loc></url>
+      <url><loc>#{base_url}/friends/</loc></url>
     </urlset>
     """
     |> String.trim_leading()

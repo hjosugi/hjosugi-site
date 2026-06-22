@@ -15,7 +15,7 @@ const PAGES = [
   { name: "about", path: "/", ready: "h1" },
   { name: "radar", path: "/radar/", ready: ".radar-card" },
   { name: "popular", path: "/popular/", ready: ".radar-card" },
-  { name: "gallery", path: "/gallery/", ready: ".char-card" },
+  { name: "friends", path: "/friends/", ready: ".char-card" },
 ];
 
 const SHOT_DIR = join("e2e", "screenshots");
@@ -98,16 +98,16 @@ test("nav exposes radar and popular as separate pages", async ({ page }) => {
   await expect(page.locator('nav a[href="popular/"]')).toHaveCount(1);
 });
 
-test("gallery introduces both mascots with pixel sprites and pose frames", async ({ page }) => {
-  await page.goto("/gallery/", { waitUntil: "networkidle" });
+test("friends page introduces both mascots with pixel sprites and pose frames", async ({ page }) => {
+  await page.goto("/friends/", { waitUntil: "networkidle" });
   await expect(page.locator(".char-card")).toHaveCount(2);
   // Each character's hero sprite and a row of pose frames render as inline SVG.
   await expect(page.locator(".char-hero-sprite svg")).toHaveCount(2);
   expect(await page.locator(".char-frames .frame").count()).toBeGreaterThanOrEqual(6);
   await expect(page.locator(".dochicken-svg").first()).toBeVisible();
-  // Gallery is reachable from the primary nav.
+  // The friends page is reachable from the primary nav.
   await page.goto("/", { waitUntil: "networkidle" });
-  await expect(page.locator('nav a[href="gallery/"]')).toHaveCount(1);
+  await expect(page.locator('nav a[href="friends/"]')).toHaveCount(1);
 });
 
 test("about page renders its project and skill sections opaquely", async ({ page }) => {
