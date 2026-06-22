@@ -51,7 +51,7 @@
     <div class="search-box">
       <div class="search-row">
         <span class="search-prompt">&gt;</span>
-        <input id="radar-search" name="q" placeholder="e.g. Spanner consistency, vector search, platform engineering" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="search-suggest">
+        <input id="radar-search" name="q" placeholder="e.g. spanner, vector search" aria-label="Search title, summary, content, source, and tags" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="search-suggest">
         <button class="primary-button" type="submit">search</button>
       </div>
       <div class="suggest" id="search-suggest" role="listbox" hidden></div>

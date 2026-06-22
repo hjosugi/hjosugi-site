@@ -289,10 +289,17 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4p
   .status-strip { grid-template-columns: 1fr; }
   .status-strip div { border-right: 0; border-bottom: 1px solid var(--line); }
   .status-strip div:last-child { border-bottom: 0; }
-  .search-row { grid-template-columns: auto 1fr; padding: 5px; }
-  .search-row input { padding: 9px 6px; }
-  .search-row .primary-button { grid-column: 1 / -1; margin-top: 5px; min-height: 40px; padding: 0 12px; font-size: 0.9rem; font-weight: 650; }
-  .search-form > label { font-size: 0.72rem; }
+  .search-form { padding: 8px 0; }
+  /* The label only repeats the placeholder on a phone, so hide it (the input
+     keeps an aria-label for assistive tech) to save vertical space. */
+  .search-form > label { display: none; }
+  .search-row { grid-template-columns: auto 1fr; padding: 4px; }
+  .search-row input { padding: 8px 6px; }
+  /* Smaller placeholder without shrinking typed text below 16px (avoids the
+     iOS focus zoom). */
+  .search-row input::placeholder { font-size: 0.85rem; }
+  .search-prompt { padding: 0 8px; }
+  .search-row .primary-button { grid-column: 1 / -1; margin-top: 4px; min-height: 38px; padding: 0 12px; font-size: 0.88rem; font-weight: 650; }
   .radar-footer { align-items: start; flex-direction: column; }
   .footer-grid { align-items: start; flex-direction: column; justify-content: center; }
   .inbox-header h1 { white-space: normal; font-size: 1.5rem; }
