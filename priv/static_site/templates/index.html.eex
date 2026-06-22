@@ -27,7 +27,7 @@
 </header>
 <main>
   <section class="shell hero">
-    <div class="eyebrow"><span class="status-dot" aria-hidden="true"></span><%= HTML.escape(@site.availability) %></div>
+    <div class="eyebrow"><span class="status-dot" aria-hidden="true"></span><%= HTML.escape(@site.location) %></div>
     <p class="terminal-line"><span class="prompt">$</span> whoami</p>
     <div class="hero-identity">
       <%= if @avatar_url != "" do %><img class="profile-avatar" src="<%= HTML.escape(@avatar_url) %>" alt="<%= HTML.escape(@site.display_name) %> GitHub avatar" width="96" height="96"><% end %>
@@ -39,12 +39,6 @@
       <a class="primary-button" href="#projects">see what i tinker with</a>
       <a class="secondary-button" href="radar/">my reading radar</a>
     </div>
-    <dl class="status-strip" aria-label="Site status">
-      <div><dt>location</dt><dd><%= HTML.escape(@site.location) %></dd></div>
-      <div><dt>sources</dt><dd><%= @enabled_feeds %> feeds</dd></div>
-      <div><dt>indexed</dt><dd><%= length(@items) %> items</dd></div>
-      <div><dt>hosting</dt><dd>github pages</dd></div>
-    </dl>
   </section>
 
   <section class="shell section" id="projects">
