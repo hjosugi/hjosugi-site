@@ -40,8 +40,8 @@
     </div>
     <div class="char-info">
       <h2>Kofun-kun <span class="char-jp">古墳くん</span></h2>
-      <p class="char-tagline" lang="en">A boy shaped like a keyhole tomb (kofun).</p>
-      <p class="char-tagline" lang="ja">前方後円墳のすがたをした少年。</p>
+      <p class="char-tagline" lang="en">A child kofun — a little keyhole-tomb boy.</p>
+      <p class="char-tagline" lang="ja">前方後円墳のすがたをした、古墳の子ども。</p>
       <p class="char-bio" lang="en">He toddles along the bottom of the site. He loves <strong>euglena (midorimushi)</strong> and nibbles it whenever he spots some. Poke him and he hops with a <span class="char-note">♪</span>.</p>
       <p class="char-bio" lang="ja">サイトの下をてくてく歩きまわっています。<strong>ユーグレナ(ミドリムシ)</strong>が大好物で、見つけるとついむしゃむしゃ。つつくとぴょんと跳ねて <span class="char-note">♪</span> を出します。</p>
       <div class="char-frames char-kofun" aria-label="Kofun-kun pose frames">
