@@ -7,30 +7,9 @@ defmodule HjosugiHub.Renderer do
   @asset_dir Path.expand("../../priv/static_site/assets", __DIR__)
 
   def export(site, feeds, items, out_dir, base_url \\ "") do
-    weights = Map.new(feeds, fn feed -> {feed.id, Config.feed_weight(feed)} end)
     asset_version = asset_version()
-
-    public_items =
-      items
-      |> Store.public_items()
-      |> Enum.map(fn item -> Map.put(item, :weight, Map.get(weights, item.source_id, 1.0)) end)
-
-    now = DateTime.utc_now()
-
-    assigns = %{
-      site: site,
-      feeds: feeds,
-      enabled_feeds: Config.enabled_feeds(feeds),
-      featured: Enum.filter(Map.get(site, :projects, []), &Map.get(&1, :featured, false)),
-      others: Enum.reject(Map.get(site, :projects, []), &Map.get(&1, :featured, false)),
-      avatar_url: Config.avatar_url(site),
-      kofun: Kofun.pet_html(),
-      items: public_items,
-      generated_text: Calendar.strftime(now, "%Y-%m-%d %H:%M UTC"),
-      year: now.year,
-      base_url: String.trim_trailing(base_url || "", "/"),
-      asset_version: asset_version
-    }
+    public_items = public_items(items, feeds)
+    assigns = build_assigns(site, feeds, public_items, base_url, asset_version)
 
     write_rendered(out_dir, "index.html", "index.html.eex", assigns)
     write_radar_pages(out_dir, assigns)
@@ -56,6 +35,33 @@ defmodule HjosugiHub.Renderer do
     end
 
     :ok
+  end
+
+  defp public_items(items, feeds) do
+    weights = Map.new(feeds, fn feed -> {feed.id, Config.feed_weight(feed)} end)
+
+    items
+    |> Store.public_items()
+    |> Enum.map(fn item -> Map.put(item, :weight, Map.get(weights, item.source_id, 1.0)) end)
+  end
+
+  defp build_assigns(site, feeds, public_items, base_url, asset_version) do
+    now = DateTime.utc_now()
+
+    %{
+      site: site,
+      feeds: feeds,
+      enabled_feeds: Config.enabled_feeds(feeds),
+      featured: Enum.filter(Map.get(site, :projects, []), &Map.get(&1, :featured, false)),
+      others: Enum.reject(Map.get(site, :projects, []), &Map.get(&1, :featured, false)),
+      avatar_url: Config.avatar_url(site),
+      kofun: Kofun.pet_html(),
+      items: public_items,
+      generated_text: Calendar.strftime(now, "%Y-%m-%d %H:%M UTC"),
+      year: now.year,
+      base_url: String.trim_trailing(base_url || "", "/"),
+      asset_version: asset_version
+    }
   end
 
   # The radar template backs two separate pages: /radar/ (the full searchable

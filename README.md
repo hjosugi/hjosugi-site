@@ -64,7 +64,8 @@ Set it up once in GitHub:
 3. Set **Build and deployment** -> **Source** to **GitHub Actions**.
 4. Push to `main`, or run **Deploy Hjosugi Hub** from the Actions tab.
 
-The deploy workflow also runs every six hours to refresh the public radar data.
+The deploy workflow also runs daily at 06:00 JST to refresh the public radar
+data. GitHub Actions schedules are UTC, so the workflow uses `0 21 * * *`.
 It passes GitHub Pages' resolved URL to `mix hub.export --base-url`, so
 `robots.txt` and `sitemap.xml` match the actual Pages URL. No secrets are
 required.

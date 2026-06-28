@@ -20,7 +20,7 @@ mix hub.export --out public
 - 収集アイテムの正規化、タグ付け、重複排除
 - GitHub Pages向けの静的HTML/JSON書き出し
 - ブラウザ側JavaScriptでの検索、タグ/ソース絞り込み
-- GitHub Actionsによる6時間ごとの収集とデプロイ
+- GitHub Actionsによる毎朝6時(JST)の収集とデプロイ
 
 ## GitHub Pagesで安く公開する
 
@@ -42,7 +42,8 @@ GitHub側の初回設定:
 3. **Build and deployment** -> **Source** を **GitHub Actions** にする
 4. `main`へpushするか、Actionsタブから **Deploy Hjosugi Hub** を手動実行する
 
-deploy workflow は6時間ごとにも実行され、公開radarデータを更新します。
+deploy workflow は毎朝6時(JST)にも実行され、公開radarデータを更新します。
+GitHub Actions のscheduleはUTC基準なので、cronは `0 21 * * *` です。
 GitHub Pagesが解決したURLを `mix hub.export --base-url` に渡すため、`robots.txt` と
 `sitemap.xml` も実際のPages URLに揃います。Secretsは不要です。
 

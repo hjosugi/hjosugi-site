@@ -2,6 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 
 const PORT = Number(process.env.E2E_PORT || 4173);
 const baseURL = `http://127.0.0.1:${PORT}`;
+const chromiumExecutablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
 
 // Viewports the design must stay responsive at. The mobile sizes reproduce the
 // original radar horizontal-overflow bug.
@@ -16,6 +17,7 @@ export default defineConfig({
   use: {
     baseURL,
     trace: "on-first-retry",
+    launchOptions: chromiumExecutablePath ? { executablePath: chromiumExecutablePath } : undefined,
   },
   projects: [
     { name: "mobile-360", use: { browserName: "chromium", viewport: { width: 360, height: 740 } } },
